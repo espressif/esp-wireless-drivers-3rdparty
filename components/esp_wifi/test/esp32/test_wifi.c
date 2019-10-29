@@ -134,7 +134,7 @@ TEST_CASE("wifi stop and deinit","[wifi]")
             .password = DEFAULT_PWD
         },
     };
-    
+
     //init nvs
     ESP_LOGI(TAG, EMPH_STR("nvs_flash_init"));
     esp_err_t r = nvs_flash_init();
@@ -142,15 +142,16 @@ TEST_CASE("wifi stop and deinit","[wifi]")
         ESP_LOGI(TAG, EMPH_STR("no free pages or nvs version mismatch, erase.."));
         TEST_ESP_OK(nvs_flash_erase());
         r = nvs_flash_init();
-    } 
+    }
     TEST_ESP_OK(r);
     //init tcpip
     ESP_LOGI(TAG, EMPH_STR("tcpip_adapter_init"));
     tcpip_adapter_init();
     //init event loop
+
     ESP_LOGI(TAG, EMPH_STR("event_init"));
     event_init();
-    
+
     ESP_LOGI(TAG, "test wifi init & deinit...");
     test_wifi_init_deinit(&cfg, &wifi_config);
     ESP_LOGI(TAG, "wifi init & deinit seem to be OK.");
