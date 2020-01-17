@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <sys/param.h>
 #include "mbedtls/bignum.h"
-#include "esp32s2beta/rom/bigint.h"
+#include "esp32s2/rom/bigint.h"
 #include "soc/hwcrypto_reg.h"
 #include "esp_system.h"
 #include "esp_log.h"

@@ -38,7 +38,7 @@
 #include "esp_private/wifi_os_adapter.h"
 #include "esp_private/wifi.h"
 #include "esp_phy_init.h"
-#include "esp32s2beta/clk.h"
+#include "esp32s2/clk.h"
 #include "driver/periph_ctrl.h"
 #include "nvs.h"
 #include "os.h"

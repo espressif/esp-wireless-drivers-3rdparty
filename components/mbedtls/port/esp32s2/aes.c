@@ -29,16 +29,16 @@
 #include <string.h>
 #include <sys/lock.h>
 #include "mbedtls/aes.h"
-#include "esp32s2beta/aes.h"
-#include "esp32s2beta/gcm.h"
+#include "esp32s2/aes.h"
+#include "esp32s2/gcm.h"
 #include "soc/soc.h"
 #include "soc/cpu.h"
 #include "soc/dport_reg.h"
 #include "soc/hwcrypto_reg.h"
 #include "soc/crypto_dma_reg.h"
-#include "esp32s2beta/crypto_dma.h"
-#include "esp32s2beta/rom/lldesc.h"
-#include "esp32s2beta/rom/cache.h"
+#include "esp32s2/crypto_dma.h"
+#include "esp32s2/rom/lldesc.h"
+#include "esp32s2/rom/cache.h"
 #include "soc/periph_defs.h"
 #include "esp_intr_alloc.h"
 

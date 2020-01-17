@@ -15,7 +15,7 @@
 #ifndef _ESP_SHA_H_
 #define _ESP_SHA_H_
 
-#include "esp32s2beta/rom/sha.h"
+#include "esp32s2/rom/sha.h"
 #include "esp_types.h"
 
 /** @brief Low-level support functions for the hardware SHA engine
