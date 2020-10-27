@@ -37,7 +37,7 @@ typedef enum {
 #define FOUR_UNIVERSAL_MAC_ADDR 4
 #if CONFIG_IDF_TARGET_ESP32
 #define UNIVERSAL_MAC_ADDR_NUM CONFIG_ESP32_UNIVERSAL_MAC_ADDRESSES
-#elif CONFIG_IDF_TARGET_ESP32S2BETA
+#elif CONFIG_IDF_TARGET_ESP32S2
 #define UNIVERSAL_MAC_ADDR_NUM CONFIG_ESP32S2_UNIVERSAL_MAC_ADDRESSES
 #endif
 /** @endcond */
@@ -230,7 +230,7 @@ esp_err_t esp_efuse_mac_get_default(uint8_t *mac);
 esp_err_t esp_read_mac(uint8_t* mac, esp_mac_type_t type);
 
 /**
-  * @brief  Derive local MAC address from universal MAC address.
+  * @brief Derive local MAC address from universal MAC address.
   *
   * This function derives a local MAC address from an universal MAC address.
   * A `definition of local vs universal MAC address can be found on Wikipedia
@@ -246,11 +246,19 @@ esp_err_t esp_read_mac(uint8_t* mac, esp_mac_type_t type);
 esp_err_t esp_derive_local_mac(uint8_t* local_mac, const uint8_t* universal_mac);
 
 /**
+ * @brief Trigger a software abort
+ *
+ * @param details Details that will be displayed during panic handling.
+ */
+void  __attribute__((noreturn)) esp_system_abort(const char* details);
+
+/**
  * @brief Chip models
  */
 typedef enum {
     CHIP_ESP32  = 1, //!< ESP32
-    CHIP_ESP32S2BETA = 2, //!< ESP32-S2 Beta
+    CHIP_ESP32S2 = 2, //!< ESP32-S2
+    CHIP_ESP32S3 = 4, //!< ESP32-S3
 } esp_chip_model_t;
 
 /* Chip feature flags, used in esp_chip_info_t */
@@ -274,6 +282,18 @@ typedef struct {
  * @param[out] out_info structure to be filled
  */
 void esp_chip_info(esp_chip_info_t* out_info);
+
+
+#if CONFIG_ESP32_ECO3_CACHE_LOCK_FIX
+/**
+ * @brief Cache lock bug exists or not
+ *
+ * @return
+ *          - ture : bug exists
+ *          - false : bug not exists
+ */
+bool soc_has_cache_lock_bug(void);
+#endif
 
 #ifdef __cplusplus
 }
