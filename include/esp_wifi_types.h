@@ -314,38 +314,49 @@ typedef struct {
 typedef struct {
     signed rssi:8;                /**< Received Signal Strength Indicator(RSSI) of packet. unit: dBm */
     unsigned rate:5;              /**< PHY rate encoding of the packet. Only valid for non HT(11bg) packet */
-    unsigned :1;                  /**< reserve */
+    unsigned :1;                  /**< reserved */
     unsigned sig_mode:2;          /**< 0: non HT(11bg) packet; 1: HT(11n) packet; 3: VHT(11ac) packet */
-    unsigned :16;                 /**< reserve */
+    unsigned :16;                 /**< reserved */
     unsigned mcs:7;               /**< Modulation Coding Scheme. If is HT(11n) packet, shows the modulation, range from 0 to 76(MSC0 ~ MCS76) */
     unsigned cwb:1;               /**< Channel Bandwidth of the packet. 0: 20MHz; 1: 40MHz */
-    unsigned :16;                 /**< reserve */
-    unsigned smoothing:1;         /**< reserve */
-    unsigned not_sounding:1;      /**< reserve */
-    unsigned :1;                  /**< reserve */
+    unsigned :16;                 /**< reserved */
+    unsigned smoothing:1;         /**< reserved */
+    unsigned not_sounding:1;      /**< reserved */
+    unsigned :1;                  /**< reserved */
     unsigned aggregation:1;       /**< Aggregation. 0: MPDU packet; 1: AMPDU packet */
     unsigned stbc:2;              /**< Space Time Block Code(STBC). 0: non STBC packet; 1: STBC packet */
     unsigned fec_coding:1;        /**< Flag is set for 11n packets which are LDPC */
     unsigned sgi:1;               /**< Short Guide Interval(SGI). 0: Long GI; 1: Short GI */
 #if CONFIG_IDF_TARGET_ESP32
     signed noise_floor:8;         /**< noise floor of Radio Frequency Module(RF). unit: 0.25dBm*/
-#elif CONFIG_IDF_TARGET_ESP32S2BETA
-    unsigned :8;
+#elif CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32C3
+    unsigned :8;                  /**< reserved */
 #endif
     unsigned ampdu_cnt:8;         /**< ampdu cnt */
     unsigned channel:4;           /**< primary channel on which this packet is received */
     unsigned secondary_channel:4; /**< secondary channel on which this packet is received. 0: none; 1: above; 2: below */
-    unsigned :8;                  /**< reserve */
+    unsigned :8;                  /**< reserved */
     unsigned timestamp:32;        /**< timestamp. The local time when this packet is received. It is precise only if modem sleep or light sleep is not enabled. unit: microsecond */
-    unsigned :32;                 /**< reserve */
-    unsigned :31;                 /**< reserve */
-    unsigned ant:1;               /**< antenna number from which this packet is received. 0: WiFi antenna 0; 1: WiFi antenna 1 */
-#if CONFIG_IDF_TARGET_ESP32S2BETA
+    unsigned :32;                 /**< reserved */
+#if CONFIG_IDF_TARGET_ESP32S2
+    unsigned :32;                 /**< reserved */
+#elif CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32C3
     signed noise_floor:8;         /**< noise floor of Radio Frequency Module(RF). unit: 0.25dBm*/
-    unsigned :24;
+    unsigned :24;                 /**< reserved */
+    unsigned :32;                 /**< reserved */
+#endif
+    unsigned :31;                 /**< reserved */
+    unsigned ant:1;               /**< antenna number from which this packet is received. 0: WiFi antenna 0; 1: WiFi antenna 1 */
+#if CONFIG_IDF_TARGET_ESP32S2
+    signed noise_floor:8;         /**< noise floor of Radio Frequency Module(RF). unit: 0.25dBm*/
+    unsigned :24;                 /**< reserved */
+#elif CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32C3
+    unsigned :32;                 /**< reserved */
+    unsigned :32;                 /**< reserved */
+    unsigned :32;                 /**< reserved */
 #endif
     unsigned sig_len:12;          /**< length of packet including Frame Check Sequence(FCS) */
-    unsigned :12;                 /**< reserve */
+    unsigned :12;                 /**< reserved */
     unsigned rx_state:8;          /**< state of the packet. 0: no error; others: error numbers which are not public */
 } wifi_pkt_rx_ctrl_t;
 
@@ -528,6 +539,8 @@ typedef enum {
     WIFI_EVENT_AP_STADISCONNECTED,       /**< a station disconnected from ESP32 soft-AP */
     WIFI_EVENT_AP_PROBEREQRECVED,        /**< Receive probe request packet in soft-AP interface */
 
+    WIFI_EVENT_FTM_REPORT,               /**< Receive report of FTM procedure */
+
     WIFI_EVENT_MAX,                      /**< Invalid WiFi event ID */
 } wifi_event_t;
 
@@ -578,6 +591,19 @@ typedef enum {
     WPS_FAIL_REASON_MAX
 } wifi_event_sta_wps_fail_reason_t;
 
+#define MAX_SSID_LEN        32
+#define MAX_PASSPHRASE_LEN  64
+#define MAX_WPS_AP_CRED     3
+
+/** Argument structure for WIFI_EVENT_STA_WPS_ER_SUCCESS event */
+typedef struct {
+    uint8_t ap_cred_cnt;                        /**< Number of AP credentials received */
+    struct {
+        uint8_t ssid[MAX_SSID_LEN];             /**< SSID of AP */
+        uint8_t passphrase[MAX_PASSPHRASE_LEN]; /**< Passphrase for the AP */
+    } ap_cred[MAX_WPS_AP_CRED];                 /**< All AP credentials received from WPS handshake */
+} wifi_event_sta_wps_er_success_t;
+
 /** Argument structure for WIFI_EVENT_AP_STACONNECTED event */
 typedef struct {
     uint8_t mac[6];           /**< MAC address of the station connected to ESP32 soft-AP */
@@ -595,6 +621,13 @@ typedef struct {
     int rssi;                 /**< Received probe request signal strength */
     uint8_t mac[6];           /**< MAC address of the station which send probe request */
 } wifi_event_ap_probe_req_rx_t;
+
+#define WIFI_STATIS_BUFFER    (1<<0)
+#define WIFI_STATIS_RXTX      (1<<1)
+#define WIFI_STATIS_HW        (1<<2)
+#define WIFI_STATIS_DIAG      (1<<3)
+#define WIFI_STATIS_PS        (1<<4)
+#define WIFI_STATIS_ALL       (-1)
 
 #ifdef __cplusplus
 }
