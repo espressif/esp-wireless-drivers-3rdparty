@@ -25,5 +25,6 @@
 #include "esp_wpa.h"
 #include "esp_timer.h"
 #include "esp_system.h"
+#include "esp_wpa2.h"
 
 #endif /* _ESPIDF_WIFI_H_ */

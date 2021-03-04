@@ -8,7 +8,7 @@ Wireless software drivers mainly contains of hardware drivers, wireless protocol
 
 ## Update Software of Wireless Framework
 
-1. set environment variable `IDF_PATH` to be esp-idf's absolute path
+1. setup compiling environment by `. ./export.sh` in esp-idf directory
 
 2. in the root directory of this project, input command `make` to recompile `helper_project` to generate new libraries and header files
 
