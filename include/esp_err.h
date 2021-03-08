@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-typedef int32_t esp_err_t;
+typedef int esp_err_t;
 
 /* Definitions for error constants. */
 #define ESP_OK          0       /*!< esp_err_t value indicating success (no error) */
@@ -42,6 +42,7 @@ typedef int32_t esp_err_t;
 #define ESP_ERR_WIFI_BASE           0x3000  /*!< Starting number of WiFi error codes */
 #define ESP_ERR_MESH_BASE           0x4000  /*!< Starting number of MESH error codes */
 #define ESP_ERR_FLASH_BASE          0x6000  /*!< Starting number of flash error codes */
+#define ESP_ERR_HW_CRYPTO_BASE      0xc000  /*!< Starting number of HW cryptography module error codes */
 
 /**
   * @brief Returns string for esp_err_t error codes

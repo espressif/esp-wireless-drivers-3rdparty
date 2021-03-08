@@ -33,8 +33,9 @@ SOC_INCS_DIR := $(PRJ_DIR)/include/$(SOC)
 
 # SoC
 
+SOC_HFS := $(IDF_PATH)/components/esp_wifi/$(SOC)/include/phy_init_data.h
+
 ifeq ($(SOC), esp32)
-SOC_HFS       := $(IDF_PATH)/components/esp_wifi/esp32/include/phy_init_data.h
 SDKCONFIG_RMS := CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ \
                  CONFIG_ESP32_TRACEMEM_RESERVE_DRAM \
                  CONFIG_PTHREAD_STACK_MIN
