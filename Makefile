@@ -51,7 +51,8 @@ endif
 IDF_COMPONENTS := wpa_supplicant
 GEN_LIBS  := $(foreach c,$(IDF_COMPONENTS),$(PRJ_DIR)/$(EXAMPLE)/build/esp-idf/$(c)/lib$(c).a)
 WIFI_LIBS := $(IDF_PATH)/components/esp_wifi/lib/$(SOC)/*
-IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS)
+BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib/$(SOC)/*
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
 
 # Types
 
@@ -141,6 +142,9 @@ SDKCONFIG_DST_HF := $(SOC_INCS_DIR)/sdkconfig.h
 SDKCONFIG_SRC_HF := $(PRJ_DIR)/$(EXAMPLE)/build/config/sdkconfig.h
 SDKCONFIG_PTH_HF := $(PRJ_DIR)/patch/$(SOC)/sdkconfig.h
 
+# BT/BLE
+BT_HF := $(PRJ_DIR)/patch/$(SOC)/esp_bt.h
+
 .PHONY: all clean build copy_libs copy_hfiles
 
 all: copy_libs copy_hfiles
@@ -199,6 +203,10 @@ soc_files:
 	@cat $(SDKCONFIG_PTH_HF) >> $(SDKCONFIG_DST_HF)
 	@$(call strip_macros,$(SDKCONFIG_DST_HF),$(SDKCONFIG_RMS))
 
+bt_files:
+	@mkdir -p $(SOC_INCS_DIR)
+	@$(call copy_files,$(BT_HF),$(SOC_INCS_DIR))
+
 copy_hfiles: config_files wifi_files common_files event_files \
              wpa_files nvs_files esptimer_files espsystem_files \
-			 soc_files
+			 soc_files bt_files
