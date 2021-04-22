@@ -70,6 +70,9 @@ WIFI_SRC_HFS := $(WIFI_DIR)/esp_wifi.h \
                 $(WIFI_DIR)/phy.h \
                 $(WIFI_DIR)/esp_wifi_crypto_types.h \
                 $(WIFI_DIR)/esp_smartconfig.h \
+                $(WIFI_DIR)/esp_coexist_adapter.h \
+                $(WIFI_DIR)/esp_coexist_internal.h \
+                $(WIFI_DIR)/esp_coexist.h
 
 # Wi-Fi Private
 
