@@ -1,26 +1,24 @@
-/****************************************************************************
- * arch/xtensa/src/esp32/esp_bt.h
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.  The
- * ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the
- * License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- ****************************************************************************/
+// Copyright 2015-2016 Espressif Systems (Shanghai) PTE LTD
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 
-#pragma once
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
+#ifndef __ESP_BT_H__
+#define __ESP_BT_H__
+
+#include <stdint.h>
+#include <stdbool.h>
 #include "esp_err.h"
+#include "sdkconfig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,29 +51,76 @@ enum {
     ESP_BLE_SCA_20PPM,            /*!< BLE SCA at 20ppm */
 };
 
+#ifdef CONFIG_BT_ENABLED
 /* While scanning, if the free memory value in controller is less than SCAN_SEND_ADV_RESERVED_SIZE,
 the adv packet will be discarded until the memory is restored. */
 #define SCAN_SEND_ADV_RESERVED_SIZE        1000
 /* enable controller log debug when adv lost */
 #define CONTROLLER_ADV_LOST_DEBUG_BIT      (0<<0)
 
+#ifdef CONFIG_BTDM_CTRL_HCI_UART_NO
+#define BT_HCI_UART_NO_DEFAULT                      CONFIG_BTDM_CTRL_HCI_UART_NO
+#else
 #define BT_HCI_UART_NO_DEFAULT                      1
+#endif /* BT_HCI_UART_NO_DEFAULT */
 
+#ifdef CONFIG_BTDM_CTRL_HCI_UART_BAUDRATE
+#define BT_HCI_UART_BAUDRATE_DEFAULT                CONFIG_BTDM_CTRL_HCI_UART_BAUDRATE
+#else
 #define BT_HCI_UART_BAUDRATE_DEFAULT                921600
+#endif /* BT_HCI_UART_BAUDRATE_DEFAULT */
 
+#ifdef CONFIG_BTDM_SCAN_DUPL_TYPE
+#define SCAN_DUPLICATE_TYPE_VALUE  CONFIG_BTDM_SCAN_DUPL_TYPE
+#else
 #define SCAN_DUPLICATE_TYPE_VALUE  0
+#endif
 
 /* normal adv cache size */
+#ifdef CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE
+#define NORMAL_SCAN_DUPLICATE_CACHE_SIZE            CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE
+#else
 #define NORMAL_SCAN_DUPLICATE_CACHE_SIZE            20
+#endif
+
+#ifndef CONFIG_BTDM_BLE_MESH_SCAN_DUPL_EN
+#define CONFIG_BTDM_BLE_MESH_SCAN_DUPL_EN FALSE
+#endif
 
 #define SCAN_DUPLICATE_MODE_NORMAL_ADV_ONLY         0
 #define SCAN_DUPLICATE_MODE_NORMAL_ADV_MESH_ADV     1
 
-#define SCAN_DUPLICATE_MODE SCAN_DUPLICATE_MODE_NORMAL_ADV_ONLY
-#define MESH_DUPLICATE_SCAN_CACHE_SIZE          0
+#if CONFIG_BTDM_BLE_MESH_SCAN_DUPL_EN
+    #define SCAN_DUPLICATE_MODE                     SCAN_DUPLICATE_MODE_NORMAL_ADV_MESH_ADV
+    #ifdef CONFIG_BTDM_MESH_DUPL_SCAN_CACHE_SIZE
+    #define MESH_DUPLICATE_SCAN_CACHE_SIZE          CONFIG_BTDM_MESH_DUPL_SCAN_CACHE_SIZE
+    #else
+    #define MESH_DUPLICATE_SCAN_CACHE_SIZE          50
+    #endif
+#else
+    #define SCAN_DUPLICATE_MODE SCAN_DUPLICATE_MODE_NORMAL_ADV_ONLY
+    #define MESH_DUPLICATE_SCAN_CACHE_SIZE          0
+#endif
+
+#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY)
 #define BTDM_CONTROLLER_MODE_EFF                    ESP_BT_MODE_BLE
+#elif defined(CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY)
+#define BTDM_CONTROLLER_MODE_EFF                    ESP_BT_MODE_CLASSIC_BT
+#else
+#define BTDM_CONTROLLER_MODE_EFF                    ESP_BT_MODE_BTDM
+#endif
+
+#ifdef CONFIG_BTDM_CTRL_AUTO_LATENCY_EFF
+#define BTDM_CTRL_AUTO_LATENCY_EFF CONFIG_BTDM_CTRL_AUTO_LATENCY_EFF
+#else
 #define BTDM_CTRL_AUTO_LATENCY_EFF false
+#endif
+
+#ifdef CONFIG_BTDM_CTRL_LEGACY_AUTH_VENDOR_EVT_EFF
+#define BTDM_CTRL_LEGACY_AUTH_VENDOR_EVT_EFF CONFIG_BTDM_CTRL_LEGACY_AUTH_VENDOR_EVT_EFF
+#else
 #define BTDM_CTRL_LEGACY_AUTH_VENDOR_EVT_EFF false
+#endif
 
 #define BTDM_CONTROLLER_BLE_MAX_CONN_LIMIT          9   //Maximum BLE connection limitation
 #define BTDM_CONTROLLER_BR_EDR_MAX_ACL_CONN_LIMIT   7   //Maximum ACL connection limitation
@@ -85,8 +130,8 @@ the adv packet will be discarded until the memory is restored. */
 #define BTDM_CONTROLLER_SCO_DATA_PATH_PCM           1   // SCO data path is PCM
 
 #define BT_CONTROLLER_INIT_CONFIG_DEFAULT() {                              \
-    .controller_task_stack_size = 4096,            \
-    .controller_task_prio = 110,                   \
+    .controller_task_stack_size = ESP_TASK_BT_CONTROLLER_STACK,            \
+    .controller_task_prio = ESP_TASK_BT_CONTROLLER_PRIO,                   \
     .hci_uart_no = BT_HCI_UART_NO_DEFAULT,                                 \
     .hci_uart_baudrate = BT_HCI_UART_BAUDRATE_DEFAULT,                     \
     .scan_duplicate_mode = SCAN_DUPLICATE_MODE,                            \
@@ -96,17 +141,21 @@ the adv packet will be discarded until the memory is restored. */
     .send_adv_reserved_size = SCAN_SEND_ADV_RESERVED_SIZE,                 \
     .controller_debug_flag = CONTROLLER_ADV_LOST_DEBUG_BIT,                \
     .mode = BTDM_CONTROLLER_MODE_EFF,                                      \
-    .ble_max_conn = 3,                     \
-    .bt_max_acl_conn = 0,           \
-    .bt_sco_datapath = 0,          \
+    .ble_max_conn = CONFIG_BTDM_CTRL_BLE_MAX_CONN_EFF,                     \
+    .bt_max_acl_conn = CONFIG_BTDM_CTRL_BR_EDR_MAX_ACL_CONN_EFF,           \
+    .bt_sco_datapath = CONFIG_BTDM_CTRL_BR_EDR_SCO_DATA_PATH_EFF,          \
     .auto_latency = BTDM_CTRL_AUTO_LATENCY_EFF,                            \
     .bt_legacy_auth_vs_evt = BTDM_CTRL_LEGACY_AUTH_VENDOR_EVT_EFF,         \
-    .bt_max_sync_conn = 0,         \
-    .ble_sca = 1,             \
-    .pcm_role = 0,                             \
-    .pcm_polar = 0,                           \
+    .bt_max_sync_conn = CONFIG_BTDM_CTRL_BR_EDR_MAX_SYNC_CONN_EFF,         \
+    .ble_sca = CONFIG_BTDM_BLE_SLEEP_CLOCK_ACCURACY_INDEX_EFF,             \
+    .pcm_role = CONFIG_BTDM_CTRL_PCM_ROLE_EFF,                             \
+    .pcm_polar = CONFIG_BTDM_CTRL_PCM_POLAR_EFF,                           \
     .magic = ESP_BT_CONTROLLER_CONFIG_MAGIC_VAL,                           \
 };
+
+#else
+#define BT_CONTROLLER_INIT_CONFIG_DEFAULT() {0}; _Static_assert(0, "please enable bluetooth in menuconfig to use bt.h");
+#endif
 
 /**
  * @brief Controller config options, depend on config mask.
@@ -254,7 +303,7 @@ esp_err_t esp_bredr_tx_power_set(esp_power_level_t min_power_level, esp_power_le
 esp_err_t esp_bredr_tx_power_get(esp_power_level_t *min_power_level, esp_power_level_t *max_power_level);
 
 /**
- * @brief  set default SCO data path
+ * @brief  Set default SCO data path
  *         Should be called after controller is enabled, and before (e)SCO link is established
  * @param  data_path: SCO data path
  * @return              ESP_OK - success, other - failed
@@ -300,6 +349,12 @@ esp_err_t esp_bt_controller_disable(void);
  * @return status value
  */
 esp_bt_controller_status_t esp_bt_controller_get_status(void);
+
+/**
+ * @brief  Get BT MAC address.
+ * @return Array pointer of length 6 storing MAC address value.
+ */
+uint8_t* esp_bt_get_mac(void);
 
 /** @brief esp_vhci_host_callback
  *  used for vhci call host function to notify what host need to do
@@ -401,7 +456,7 @@ esp_err_t esp_bt_mem_release(esp_bt_mode_t mode);
  * There are currently two options for bluetooth modem sleep, one is ORIG mode, and another is EVED Mode. EVED Mode is intended for BLE only.
  *
  * For ORIG mode:
- * Bluetooth modem sleep is enabled in controller start up by default if CONFIG_BTDM_MODEM_SLEEP is set and "ORIG mode" is selected. In ORIG modem sleep mode, bluetooth controller will switch off some components and pause to work every now and then, if there is no event to process; and wakeup according to the scheduled interval and resume the work. It can also wakeup earlier upon external request using function "esp_bt_controller_wakeup_request".
+ * Bluetooth modem sleep is enabled in controller start up by default if CONFIG_CTRL_BTDM_MODEM_SLEEP is set and "ORIG mode" is selected. In ORIG modem sleep mode, bluetooth controller will switch off some components and pause to work every now and then, if there is no event to process; and wakeup according to the scheduled interval and resume the work. It can also wakeup earlier upon external request using function "esp_bt_controller_wakeup_request".
  *
  * @return
  *                  - ESP_OK : success
@@ -427,33 +482,12 @@ esp_err_t esp_bt_sleep_enable(void);
 esp_err_t esp_bt_sleep_disable(void);
 
 /**
- * @brief to check whether bluetooth controller is sleeping at the instant, if modem sleep is enabled
- *
- * Note that this function shall not be invoked before esp_bt_controller_enable()
- * This function is supposed to be used ORIG mode of modem sleep
- *
- * @return  true if in modem sleep state, false otherwise
- */
-bool esp_bt_controller_is_sleeping(void);
-
-/**
- * @brief request controller to wakeup from sleeping state during sleep mode
- *
- * Note that this function shall not be invoked before esp_bt_controller_enable()
- * Note that this function is supposed to be used ORIG mode of modem sleep
- * Note that after this request, bluetooth controller may again enter sleep as long as the modem sleep is enabled
- *
- * Profiling shows that it takes several milliseconds to wakeup from modem sleep after this request.
- * Generally it takes longer if 32kHz XTAL is used than the main XTAL, due to the lower frequency of the former as the bluetooth low power clock source.
- */
-void esp_bt_controller_wakeup_request(void);
-
-/**
  * @brief Manually clear scan duplicate list
  *
  * Note that scan duplicate list will be automatically cleared when the maximum amount of device in the filter is reached
  * the amount of device in the filter can be configured in menuconfig.
  *
+ * @note This function name is incorrectly spelled, it will be fixed in release 5.x version.
  *
  * @return
  *                  - ESP_OK : success
@@ -464,3 +498,5 @@ esp_err_t esp_ble_scan_dupilcate_list_flush(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __ESP_BT_H__ */
