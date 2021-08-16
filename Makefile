@@ -166,7 +166,7 @@ clean:
 	@rm $(LIBS_DIR) $(INCS_DIR) $(SOC_INCS_DIR) -rf
 
 build:
-	@cd $(PRJ_DIR)/$(EXAMPLE) && idf.py -DIDF_TARGET=$(SOC) build
+	@cd $(PRJ_DIR)/$(EXAMPLE) && rm build sdkconfig sdkconfig.old -rf && idf.py -DIDF_TARGET=$(SOC) build
 
 copy_libs: build
 	@mkdir -p $(LIBS_DIR)
