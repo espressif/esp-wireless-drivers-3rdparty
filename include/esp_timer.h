@@ -1,16 +1,8 @@
-// Copyright 2017 Espressif Systems (Shanghai) PTE LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * SPDX-FileCopyrightText: 2017-2021 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #pragma once
 
@@ -43,6 +35,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "esp_err.h"
+#include "sdkconfig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,13 +58,10 @@ typedef void (*esp_timer_cb_t)(void* arg);
  */
 typedef enum {
     ESP_TIMER_TASK,     //!< Callback is called from timer task
-
-    /* Not supported for now, provision to allow callbacks to run directly
-     * from an ISR:
-
-        ESP_TIMER_ISR,      //!< Callback is called from timer ISR
-
-     */
+#ifdef CONFIG_ESP_TIMER_SUPPORTS_ISR_DISPATCH_METHOD
+    ESP_TIMER_ISR,      //!< Callback is called from timer ISR
+#endif
+    ESP_TIMER_MAX,      //!< Count of the methods for dispatching timer callback
 } esp_timer_dispatch_t;
 
 /**
@@ -85,11 +75,28 @@ typedef struct {
     bool skip_unhandled_events;     //!< Skip unhandled events for periodic timers
 } esp_timer_create_args_t;
 
+
+/**
+ * @brief Minimal initialization of esp_timer
+ *
+ * @note This function is called from startup code. Applications do not need
+ * to call this function before using other esp_timer APIs.
+ *
+ * This function can be called very early in startup process, after this call
+ * only esp_timer_get_time function can be used.
+ *
+ * @return
+ *      - ESP_OK on success
+ */
+esp_err_t esp_timer_early_init(void);
+
 /**
  * @brief Initialize esp_timer library
  *
  * @note This function is called from startup code. Applications do not need
  * to call this function before using other esp_timer APIs.
+ * Before calling this function, esp_timer_early_init must be called by the
+ * startup code.
  *
  * @return
  *      - ESP_OK on success
@@ -186,8 +193,7 @@ esp_err_t esp_timer_delete(esp_timer_handle_t timer);
 
 /**
  * @brief Get time in microseconds since boot
- * @return number of microseconds since esp_timer_init was called (this normally
- *          happens early during application startup).
+ * @return number of microseconds since underlying timer has been started
  */
 int64_t esp_timer_get_time(void);
 
@@ -197,6 +203,13 @@ int64_t esp_timer_get_time(void);
  *         The timebase is the same as for the values returned by esp_timer_get_time.
  */
 int64_t esp_timer_get_next_alarm(void);
+
+/**
+ * @brief Get the timestamp when the next timeout is expected to occur skipping those which have skip_unhandled_events flag
+ * @return Timestamp of the nearest timer event, in microseconds.
+ *         The timebase is the same as for the values returned by esp_timer_get_time.
+ */
+int64_t esp_timer_get_next_alarm_for_wake_up(void);
 
 /**
  * @brief Dump the list of timers to a stream
@@ -227,6 +240,28 @@ int64_t esp_timer_get_next_alarm(void);
  *      - ESP_ERR_NO_MEM if can not allocate temporary buffer for the output
  */
 esp_err_t esp_timer_dump(FILE* stream);
+
+#ifdef CONFIG_ESP_TIMER_SUPPORTS_ISR_DISPATCH_METHOD
+/**
+ * @brief Requests a context switch from a timer callback function.
+ *
+ * This only works for a timer that has an ISR dispatch method.
+ * The context switch will be called after all ISR dispatch timers have been processed.
+ */
+void esp_timer_isr_dispatch_need_yield(void);
+#endif // CONFIG_ESP_TIMER_SUPPORTS_ISR_DISPATCH_METHOD
+
+/**
+ * @brief Returns status of a timer, active or not
+ *
+ * This function is used to identify if the timer is still active or not.
+ *
+ * @param timer timer handle created using esp_timer_create
+ * @return
+ *      - 1 if timer is still active
+ *      - 0 if timer is not active.
+ */
+bool esp_timer_is_active(esp_timer_handle_t timer);
 
 #ifdef __cplusplus
 }

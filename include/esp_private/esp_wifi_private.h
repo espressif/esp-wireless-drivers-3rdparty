@@ -19,5 +19,14 @@
 #include "esp_wifi_crypto_types.h"
 #include "esp_private/wifi_os_adapter.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define WIFI_OSI_FUNCS_INITIALIZER() &g_wifi_osi_funcs
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ESP_WIFI_PRIVATE_H */

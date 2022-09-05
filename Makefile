@@ -33,7 +33,7 @@ SOC_INCS_DIR := $(PRJ_DIR)/include/$(SOC)
 
 # SoC
 
-SOC_HFS := $(IDF_PATH)/components/esp_wifi/$(SOC)/include/phy_init_data.h
+SOC_HFS := $(IDF_PATH)/components/esp_phy/$(SOC)/include/phy_init_data.h
 
 ifeq ($(SOC), esp32)
 SDKCONFIG_RMS := CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ \
@@ -51,6 +51,7 @@ endif
 IDF_COMPONENTS := wpa_supplicant
 GEN_LIBS  := $(foreach c,$(IDF_COMPONENTS),$(PRJ_DIR)/$(EXAMPLE)/build/esp-idf/$(c)/lib$(c).a)
 WIFI_LIBS := $(IDF_PATH)/components/esp_wifi/lib/$(SOC)/*
+PHY_LIBS  := $(IDF_PATH)/components/esp_phy/lib/$(SOC)/*
 ifeq ($(SOC), esp32)
 BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32/esp32/*
 else ifeq ($(SOC), esp32c3)
@@ -58,7 +59,7 @@ BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32c3_family/esp32c3/*
 else
 $(error "No BT libraries")
 endif
-IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS) $(PHY_LIBS)
 
 # Types
 
@@ -66,19 +67,24 @@ TYPES_DIR := patch
 TYPES_HFS := $(TYPES_DIR)/espidf_types.h \
              $(TYPES_DIR)/espidf_wifi.h
 
+# Phy
+
+PHY_DIR      := $(IDF_PATH)/components/esp_phy/include
+WIFI_SRC_HFS := $(PHY_DIR)/esp_phy_init.h \
+                $(PHY_DIR)/phy.h
+
 # Wi-Fi
 
 WIFI_DIR     := $(IDF_PATH)/components/esp_wifi/include
 WIFI_SRC_HFS := $(WIFI_DIR)/esp_wifi.h \
                 $(WIFI_DIR)/esp_wifi_default.h \
-                $(WIFI_DIR)/esp_phy_init.h \
                 $(WIFI_DIR)/esp_wifi_types.h \
-                $(WIFI_DIR)/phy.h \
                 $(WIFI_DIR)/esp_wifi_crypto_types.h \
                 $(WIFI_DIR)/esp_smartconfig.h \
                 $(WIFI_DIR)/esp_coexist_adapter.h \
                 $(WIFI_DIR)/esp_coexist_internal.h \
-                $(WIFI_DIR)/esp_coexist.h
+                $(WIFI_DIR)/esp_coexist.h \
+                $(WIFI_SRC_HFS)
 
 # Wi-Fi Private
 
@@ -98,29 +104,32 @@ WIFI_PRIV_WIFI_PRIV_DST_HF := $(WIFI_PRIV_DST_DIR)/esp_wifi_private.h
 WIFI_PRIV_WIFI_PRIV_HF_RMS := freertos\/queue.h \
                               freertos\/FreeRTOS.h
 
+# Hardware
+
+HW_DIR         := $(IDF_PATH)/components/esp_hw_support/include
+HW_SRC_HFS     := $(HW_DIR)/esp_interface.h \
+                  $(HW_DIR)/esp_mac.h \
+                  $(HW_DIR)/esp_random.h
+
 # Common
 COMMON_DIR     := $(IDF_PATH)/components/esp_common/include
 COMMON_SRC_HFS := $(COMMON_DIR)/esp_err.h \
                   $(COMMON_DIR)/esp_compiler.h \
-                  $(COMMON_DIR)/esp_interface.h
-
+                  $(HW_SRC_HFS)
 # Event
 EVENT_DIR     := $(IDF_PATH)/components/esp_event/include
 EVENT_SRC_HFS := $(EVENT_DIR)/esp_event_base.h \
-                 $(EVENT_DIR)/esp_event.h \
-                 $(EVENT_DIR)/esp_event_legacy.h
+                 $(EVENT_DIR)/esp_event.h
 
 EVENT_DST_HF := $(INCS_DIR)/esp_event.h
 EVENT_DST_RM := freertos\/FreeRTOS.h \
                 freertos\/task.h \
                 freertos\/queue.h \
-                freertos\/semphr.h
+                freertos\/semphr.h \
+                esp_event_legacy.h
 
-EVENT_LEGACY_DST_HF := $(INCS_DIR)/esp_event_legacy.h
-EVENT_LEGACY_HF_RMS := esp_netif.h \
-                       system_event_ap_staipassigned_t \
-                       system_event_sta_got_ip_t \
-                       system_event_got_ip6_t
+EVENT_LEGACY_DST_HF := $(INCS_DIR)/esp_wifi_default.h
+EVENT_LEGACY_HF_RMS := esp_netif.h
 
 # NVS
 NVS_DIR    := $(IDF_PATH)/components/nvs_flash/include
@@ -130,7 +139,7 @@ NVS_DST_HF := $(INCS_DIR)/nvs.h
 NVS_HF_RMS := esp_attr.h
 
 # WPA
-WPA_DIR     := $(IDF_PATH)/components/wpa_supplicant/include/esp_supplicant
+WPA_DIR     := $(IDF_PATH)/components/wpa_supplicant/esp_supplicant/include
 WPA_SRC_HFS := $(WPA_DIR)/esp_wpa.h \
                $(WPA_DIR)/esp_wpa2.h
 # ESP_Timer
@@ -144,7 +153,8 @@ ESPSYSTEM_SRC_HF := $(ESPSYSTEM_DIR)/esp_system.h
 ESPSYSTEM_DST_HF := $(INCS_DIR)/esp_system.h
 ESPSYSTEM_HF_RMS := esp_attr.h \
                     esp_bit_defs.h \
-                    esp_idf_version.h
+                    esp_idf_version.h \
+                    esp_chip_info.h
 
 # SDKCONFIG
 SDKCONFIG_DST_HF := $(SOC_INCS_DIR)/sdkconfig.h
@@ -160,6 +170,7 @@ BT_HF_RMS := esp_task.h
 
 all: copy_libs copy_hfiles
 	@echo $(IDF_VER_T) > $(VERISON_FILE)
+	@echo "\nCompile success."
 
 clean:
 	@cd $(PRJ_DIR)/$(EXAMPLE) && rm build sdkconfig sdkconfig.old -rf
@@ -199,6 +210,8 @@ nvs_files:
 
 wpa_files:
 	@$(call copy_files,$(WPA_SRC_HFS),$(INCS_DIR))
+	@sed -i -e "s:const wpa_crypto_funcs_t:extern const wpa_crypto_funcs_t:g" $(INCS_DIR)/esp_wpa.h
+	@sed -i -e "s:const mesh_crypto_funcs_t:extern const mesh_crypto_funcs_t:g" $(INCS_DIR)/esp_wpa.h  
 
 esptimer_files:
 	@$(call copy_files,$(ESPTIMER_SRC_HF),$(INCS_DIR))

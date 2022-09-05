@@ -20,11 +20,12 @@
 #include "esp_phy_init.h"
 #include "esp_private/wifi.h"
 #include "phy.h"
-#include "phy_init_data.h"
+#include "esp_phy_init.h"
 #include "nvs.h"
 #include "esp_wpa.h"
 #include "esp_timer.h"
 #include "esp_system.h"
 #include "esp_wpa2.h"
+#include "esp_mac.h"
 
 #endif /* _ESPIDF_WIFI_H_ */

@@ -15,6 +15,7 @@
 #define _ESPIDF_TYPES_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define IDF_DEPRECATED(_s)
 
@@ -37,6 +38,9 @@ typedef void*           QueueHandle_t;
 typedef void*           esp_netif_t;
 typedef void*           esp_netif_inherent_config_t;
 
+typedef const char*     esp_event_base_t;
+typedef int             esp_err_t;
+
 struct ets_timer
 {
   struct timer_adpt *next;
@@ -45,5 +49,11 @@ struct ets_timer
   void (*func)(void *priv);
   void *priv;
 };
+
+typedef esp_err_t (*system_event_handler_t)(esp_event_base_t event_base,
+                                            int32_t event_id,
+                                            void* event_data,
+                                            size_t event_data_size,
+                                            TickType_t ticks_to_wait);
 
 #endif /* _ESPIDF_TYPES_H_ */

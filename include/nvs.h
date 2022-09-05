@@ -1,16 +1,8 @@
-// Copyright 2015-2016 Espressif Systems (Shanghai) PTE LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * SPDX-FileCopyrightText: 2015-2022 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 #ifndef ESP_NVS_H
 #define ESP_NVS_H
 
@@ -47,7 +39,7 @@ typedef nvs_handle_t nvs_handle IDF_DEPRECATED("Replace with nvs_handle_t");
 #define ESP_ERR_NVS_INVALID_STATE           (ESP_ERR_NVS_BASE + 0x0b)  /*!< NVS is in an inconsistent state due to a previous error. Call nvs_flash_init and nvs_open again, then retry. */
 #define ESP_ERR_NVS_INVALID_LENGTH          (ESP_ERR_NVS_BASE + 0x0c)  /*!< String or blob length is not sufficient to store data */
 #define ESP_ERR_NVS_NO_FREE_PAGES           (ESP_ERR_NVS_BASE + 0x0d)  /*!< NVS partition doesn't contain any empty pages. This may happen if NVS partition was truncated. Erase the whole partition and call nvs_flash_init again. */
-#define ESP_ERR_NVS_VALUE_TOO_LONG          (ESP_ERR_NVS_BASE + 0x0e)  /*!< String or blob length is longer than supported by the implementation */
+#define ESP_ERR_NVS_VALUE_TOO_LONG          (ESP_ERR_NVS_BASE + 0x0e)  /*!< Value doesn't fit into the entry or string or blob length is longer than supported by the implementation */
 #define ESP_ERR_NVS_PART_NOT_FOUND          (ESP_ERR_NVS_BASE + 0x0f)  /*!< Partition with specified name is not found in the partition table */
 
 #define ESP_ERR_NVS_NEW_VERSION_FOUND       (ESP_ERR_NVS_BASE + 0x10)  /*!< NVS partition contains data in new format and cannot be recognized by this version of code */
@@ -104,7 +96,7 @@ typedef enum {
  */
 typedef struct {
     char namespace_name[16];    /*!< Namespace to which key-value belong */
-    char key[16];               /*!< Key of stored key-value pair */
+    char key[NVS_KEY_NAME_MAX_SIZE];               /*!< Key of stored key-value pair */
     nvs_type_t type;            /*!< Type of stored key-value pair */
 } nvs_entry_info_t;
 
@@ -131,12 +123,16 @@ typedef struct nvs_opaque_iterator_t *nvs_iterator_t;
  *
  * @return
  *             - ESP_OK if storage handle was opened successfully
+ *             - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *               NVS partition (only if NVS assertion checks are disabled)
  *             - ESP_ERR_NVS_NOT_INITIALIZED if the storage driver is not initialized
  *             - ESP_ERR_NVS_PART_NOT_FOUND if the partition with label "nvs" is not found
  *             - ESP_ERR_NVS_NOT_FOUND id namespace doesn't exist yet and
  *               mode is NVS_READONLY
  *             - ESP_ERR_NVS_INVALID_NAME if namespace name doesn't satisfy constraints
  *             - ESP_ERR_NO_MEM in case memory could not be allocated for the internal structures
+ *             - ESP_ERR_NVS_NOT_ENOUGH_SPACE if there is no space for a new entry or there are too many different
+ *                                  namespaces (maximum allowed different namespaces: 254)
  *             - other error codes from the underlying storage driver
  */
 esp_err_t nvs_open(const char* name, nvs_open_mode_t open_mode, nvs_handle_t *out_handle);
@@ -158,29 +154,110 @@ esp_err_t nvs_open(const char* name, nvs_open_mode_t open_mode, nvs_handle_t *ou
  *
  * @return
  *             - ESP_OK if storage handle was opened successfully
+ *             - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *               NVS partition (only if NVS assertion checks are disabled)
  *             - ESP_ERR_NVS_NOT_INITIALIZED if the storage driver is not initialized
  *             - ESP_ERR_NVS_PART_NOT_FOUND if the partition with specified name is not found
  *             - ESP_ERR_NVS_NOT_FOUND id namespace doesn't exist yet and
  *               mode is NVS_READONLY
  *             - ESP_ERR_NVS_INVALID_NAME if namespace name doesn't satisfy constraints
  *             - ESP_ERR_NO_MEM in case memory could not be allocated for the internal structures
+ *             - ESP_ERR_NVS_NOT_ENOUGH_SPACE if there is no space for a new entry or there are too many different
+ *                                  namespaces (maximum allowed different namespaces: 254)
  *             - other error codes from the underlying storage driver
  */
 esp_err_t nvs_open_from_partition(const char *part_name, const char* name, nvs_open_mode_t open_mode, nvs_handle_t *out_handle);
 
 /**@{*/
 /**
- * @brief      set value for given key
+ * @brief      set int8_t value for given key
  *
- * This family of functions set value for the key, given its name. Note that
- * actual storage will not be updated until nvs_commit function is called.
+ * Set value for the key, given its name. Note that the actual storage will not be updated
+ * until \c nvs_commit is called.
+ *
+ * @param[in]  handle  Handle obtained from nvs_open function.
+ *                     Handles that were opened read only cannot be used.
+ * @param[in]  key     Key name. Maximal length is (NVS_KEY_NAME_MAX_SIZE-1) characters. Shouldn't be empty.
+ * @param[in]  value   The value to set.
+ *
+ * @return
+ *             - ESP_OK if value was set successfully
+ *             - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *               NVS partition (only if NVS assertion checks are disabled)
+ *             - ESP_ERR_NVS_INVALID_HANDLE if handle has been closed or is NULL
+ *             - ESP_ERR_NVS_READ_ONLY if storage handle was opened as read only
+ *             - ESP_ERR_NVS_INVALID_NAME if key name doesn't satisfy constraints
+ *             - ESP_ERR_NVS_NOT_ENOUGH_SPACE if there is not enough space in the
+ *               underlying storage to save the value
+ *             - ESP_ERR_NVS_REMOVE_FAILED if the value wasn't updated because flash
+ *               write operation has failed. The value was written however, and
+ *               update will be finished after re-initialization of nvs, provided that
+ *               flash operation doesn't fail again.
+ */
+esp_err_t nvs_set_i8 (nvs_handle_t handle, const char* key, int8_t value);
+
+/**
+ * @brief      set uint8_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_u8 (nvs_handle_t handle, const char* key, uint8_t value);
+
+/**
+ * @brief      set int16_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_i16 (nvs_handle_t handle, const char* key, int16_t value);
+
+/**
+ * @brief      set uint16_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_u16 (nvs_handle_t handle, const char* key, uint16_t value);
+
+/**
+ * @brief      set int32_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_i32 (nvs_handle_t handle, const char* key, int32_t value);
+
+/**
+ * @brief      set uint32_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_u32 (nvs_handle_t handle, const char* key, uint32_t value);
+
+/**
+ * @brief      set int64_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_i64 (nvs_handle_t handle, const char* key, int64_t value);
+
+/**
+ * @brief      set uint64_t value for given key
+ *
+ * This function is the same as \c nvs_set_i8 except for the data type.
+ */
+esp_err_t nvs_set_u64 (nvs_handle_t handle, const char* key, uint64_t value);
+
+/**
+ * @brief      set string for given key
+ *
+ * Set value for the key, given its name. Note that the actual storage will not be updated
+ * until \c nvs_commit is called.
  *
  * @param[in]  handle  Handle obtained from nvs_open function.
  *                     Handles that were opened read only cannot be used.
  * @param[in]  key     Key name. Maximal length is (NVS_KEY_NAME_MAX_SIZE-1) characters. Shouldn't be empty.
  * @param[in]  value   The value to set.
  *                     For strings, the maximum length (including null character) is
- *                     4000 bytes.
+ *                     4000 bytes, if there is one complete page free for writing.
+ *                     This decreases, however, if the free space is fragmented.
  *
  * @return
  *             - ESP_OK if value was set successfully
@@ -195,14 +272,6 @@ esp_err_t nvs_open_from_partition(const char *part_name, const char* name, nvs_o
  *               flash operation doesn't fail again.
  *             - ESP_ERR_NVS_VALUE_TOO_LONG if the string value is too long
  */
-esp_err_t nvs_set_i8  (nvs_handle_t handle, const char* key, int8_t value);
-esp_err_t nvs_set_u8  (nvs_handle_t handle, const char* key, uint8_t value);
-esp_err_t nvs_set_i16 (nvs_handle_t handle, const char* key, int16_t value);
-esp_err_t nvs_set_u16 (nvs_handle_t handle, const char* key, uint16_t value);
-esp_err_t nvs_set_i32 (nvs_handle_t handle, const char* key, int32_t value);
-esp_err_t nvs_set_u32 (nvs_handle_t handle, const char* key, uint32_t value);
-esp_err_t nvs_set_i64 (nvs_handle_t handle, const char* key, int64_t value);
-esp_err_t nvs_set_u64 (nvs_handle_t handle, const char* key, uint64_t value);
 esp_err_t nvs_set_str (nvs_handle_t handle, const char* key, const char* value);
 /**@}*/
 
@@ -222,6 +291,8 @@ esp_err_t nvs_set_str (nvs_handle_t handle, const char* key, const char* value);
  *
  * @return
  *             - ESP_OK if value was set successfully
+ *             - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *               NVS partition (only if NVS assertion checks are disabled)
  *             - ESP_ERR_NVS_INVALID_HANDLE if handle has been closed or is NULL
  *             - ESP_ERR_NVS_READ_ONLY if storage handle was opened as read only
  *             - ESP_ERR_NVS_INVALID_NAME if key name doesn't satisfy constraints
@@ -237,16 +308,15 @@ esp_err_t nvs_set_blob(nvs_handle_t handle, const char* key, const void* value, 
 
 /**@{*/
 /**
- * @brief      get value for given key
+ * @brief      get int8_t value for given key
  *
- * These functions retrieve value for the key, given its name. If key does not
+ * These functions retrieve value for the key, given its name. If \c key does not
  * exist, or the requested variable type doesn't match the type which was used
  * when setting a value, an error is returned.
  *
  * In case of any error, out_value is not modified.
  *
- * All functions expect out_value to be a pointer to an already allocated variable
- * of the given type.
+ * \c out_value has to be a pointer to an already allocated variable of the given type.
  *
  * \code{c}
  * // Example of using nvs_get_i32:
@@ -266,23 +336,68 @@ esp_err_t nvs_set_blob(nvs_handle_t handle, const char* key, const void* value, 
  *
  * @return
  *             - ESP_OK if the value was retrieved successfully
+ *             - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *               NVS partition (only if NVS assertion checks are disabled)
  *             - ESP_ERR_NVS_NOT_FOUND if the requested key doesn't exist
  *             - ESP_ERR_NVS_INVALID_HANDLE if handle has been closed or is NULL
  *             - ESP_ERR_NVS_INVALID_NAME if key name doesn't satisfy constraints
  *             - ESP_ERR_NVS_INVALID_LENGTH if length is not sufficient to store data
  */
-esp_err_t nvs_get_i8  (nvs_handle_t handle, const char* key, int8_t* out_value);
-esp_err_t nvs_get_u8  (nvs_handle_t handle, const char* key, uint8_t* out_value);
+esp_err_t nvs_get_i8 (nvs_handle_t handle, const char* key, int8_t* out_value);
+
+/**
+ * @brief      get uint8_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
+esp_err_t nvs_get_u8 (nvs_handle_t handle, const char* key, uint8_t* out_value);
+
+/**
+ * @brief      get int16_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
 esp_err_t nvs_get_i16 (nvs_handle_t handle, const char* key, int16_t* out_value);
+
+/**
+ * @brief      get uint16_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
 esp_err_t nvs_get_u16 (nvs_handle_t handle, const char* key, uint16_t* out_value);
+
+/**
+ * @brief      get int32_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
 esp_err_t nvs_get_i32 (nvs_handle_t handle, const char* key, int32_t* out_value);
+
+/**
+ * @brief      get uint32_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
 esp_err_t nvs_get_u32 (nvs_handle_t handle, const char* key, uint32_t* out_value);
+
+/**
+ * @brief      get int64_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
 esp_err_t nvs_get_i64 (nvs_handle_t handle, const char* key, int64_t* out_value);
+
+/**
+ * @brief      get uint64_t value for given key
+ *
+ * This function is the same as \c nvs_get_i8 except for the data type.
+ */
 esp_err_t nvs_get_u64 (nvs_handle_t handle, const char* key, uint64_t* out_value);
 /**@}*/
 
+/**@{*/
 /**
- * @brief      get value for given key
+ * @brief      get string value for given key
  *
  * These functions retrieve the data of an entry, given its key. If key does not
  * exist, or the requested variable type doesn't match the type which was used
@@ -319,7 +434,7 @@ esp_err_t nvs_get_u64 (nvs_handle_t handle, const char* key, uint64_t* out_value
  *
  * @param[in]     handle     Handle obtained from nvs_open function.
  * @param[in]     key        Key name. Maximal length is (NVS_KEY_NAME_MAX_SIZE-1) characters. Shouldn't be empty.
- * @param         out_value  Pointer to the output value.
+ * @param[out]    out_value  Pointer to the output value.
  *                           May be NULL for nvs_get_str and nvs_get_blob, in this
  *                           case required length will be returned in length argument.
  * @param[inout]  length     A non-zero pointer to the variable holding the length of out_value.
@@ -330,13 +445,20 @@ esp_err_t nvs_get_u64 (nvs_handle_t handle, const char* key, uint64_t* out_value
  *
  * @return
  *             - ESP_OK if the value was retrieved successfully
+ *             - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *               NVS partition (only if NVS assertion checks are disabled)
  *             - ESP_ERR_NVS_NOT_FOUND if the requested key doesn't exist
  *             - ESP_ERR_NVS_INVALID_HANDLE if handle has been closed or is NULL
  *             - ESP_ERR_NVS_INVALID_NAME if key name doesn't satisfy constraints
- *             - ESP_ERR_NVS_INVALID_LENGTH if length is not sufficient to store data
+ *             - ESP_ERR_NVS_INVALID_LENGTH if \c length is not sufficient to store data
  */
-/**@{*/
 esp_err_t nvs_get_str (nvs_handle_t handle, const char* key, char* out_value, size_t* length);
+
+/**
+ * @brief      get blob value for given key
+ *
+ * This function behaves the same as \c nvs_get_str, except for the data type.
+ */
 esp_err_t nvs_get_blob(nvs_handle_t handle, const char* key, void* out_value, size_t* length);
 /**@}*/
 
@@ -352,6 +474,8 @@ esp_err_t nvs_get_blob(nvs_handle_t handle, const char* key, void* out_value, si
  *
  * @return
  *              - ESP_OK if erase operation was successful
+ *              - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *                NVS partition (only if NVS assertion checks are disabled)
  *              - ESP_ERR_NVS_INVALID_HANDLE if handle has been closed or is NULL
  *              - ESP_ERR_NVS_READ_ONLY if handle was opened as read only
  *              - ESP_ERR_NVS_NOT_FOUND if the requested key doesn't exist
@@ -369,6 +493,8 @@ esp_err_t nvs_erase_key(nvs_handle_t handle, const char* key);
  *
  * @return
  *              - ESP_OK if erase operation was successful
+ *              - ESP_FAIL if there is an internal error; most likely due to corrupted
+ *                NVS partition (only if NVS assertion checks are disabled)
  *              - ESP_ERR_NVS_INVALID_HANDLE if handle has been closed or is NULL
  *              - ESP_ERR_NVS_READ_ONLY if handle was opened as read only
  *              - other error codes from the underlying storage driver
@@ -453,7 +579,9 @@ esp_err_t nvs_get_stats(const char *part_name, nvs_stats_t *nvs_stats);
 /**
  * @brief      Calculate all entries in a namespace.
  *
- * Note that to find out the total number of records occupied by the namespace,
+ * An entry represents the smallest storage unit in NVS.
+ * Strings and blobs may occupy more than one entry.
+ * Note that to find out the total number of entries occupied by the namespace,
  * add one to the returned value used_entries (if err is equal to ESP_OK).
  * Because the name space entry takes one entry.
  *
@@ -465,7 +593,7 @@ esp_err_t nvs_get_stats(const char *part_name, nvs_stats_t *nvs_stats);
  * size_t used_entries;
  * size_t total_entries_namespace;
  * if(nvs_get_used_entry_count(handle, &used_entries) == ESP_OK){
- *     // the total number of records occupied by the namespace
+ *     // the total number of entries occupied by the namespace
  *     total_entries_namespace = used_entries + 1;
  * }
  * \endcode
