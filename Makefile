@@ -33,7 +33,7 @@ SOC_INCS_DIR := $(PRJ_DIR)/include/$(SOC)
 
 # SoC
 
-SOC_HFS := $(IDF_PATH)/components/esp_wifi/$(SOC)/include/phy_init_data.h
+SOC_HFS := $(IDF_PATH)/components/esp_phy/$(SOC)/include/phy_init_data.h
 
 ifeq ($(SOC), esp32)
 SDKCONFIG_RMS := CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ \
@@ -69,16 +69,17 @@ TYPES_HFS := $(TYPES_DIR)/espidf_types.h \
 # Wi-Fi
 
 WIFI_DIR     := $(IDF_PATH)/components/esp_wifi/include
+PHY_DIR      := $(IDF_PATH)/components/esp_phy/include
 WIFI_SRC_HFS := $(WIFI_DIR)/esp_wifi.h \
                 $(WIFI_DIR)/esp_wifi_default.h \
-                $(WIFI_DIR)/esp_phy_init.h \
+                $(PHY_DIR)/esp_phy_init.h \
                 $(WIFI_DIR)/esp_wifi_types.h \
-                $(WIFI_DIR)/phy.h \
+                $(PHY_DIR)/phy.h \
                 $(WIFI_DIR)/esp_wifi_crypto_types.h \
                 $(WIFI_DIR)/esp_smartconfig.h \
                 $(WIFI_DIR)/esp_coexist_adapter.h \
                 $(WIFI_DIR)/esp_coexist_internal.h \
-                $(WIFI_DIR)/esp_coexist.h
+                $(WIFI_DIR)/esp_coexist.h 
 
 # Wi-Fi Private
 
@@ -100,15 +101,15 @@ WIFI_PRIV_WIFI_PRIV_HF_RMS := freertos\/queue.h \
 
 # Common
 COMMON_DIR     := $(IDF_PATH)/components/esp_common/include
+HW_SUPPORT_DIR := $(IDF_PATH)/components/esp_hw_support/include
 COMMON_SRC_HFS := $(COMMON_DIR)/esp_err.h \
                   $(COMMON_DIR)/esp_compiler.h \
-                  $(COMMON_DIR)/esp_interface.h
+                  $(HW_SUPPORT_DIR)/esp_interface.h
 
 # Event
 EVENT_DIR     := $(IDF_PATH)/components/esp_event/include
 EVENT_SRC_HFS := $(EVENT_DIR)/esp_event_base.h \
-                 $(EVENT_DIR)/esp_event.h \
-                 $(EVENT_DIR)/esp_event_legacy.h
+                 $(EVENT_DIR)/esp_event.h 
 
 EVENT_DST_HF := $(INCS_DIR)/esp_event.h
 EVENT_DST_RM := freertos\/FreeRTOS.h \
@@ -130,7 +131,7 @@ NVS_DST_HF := $(INCS_DIR)/nvs.h
 NVS_HF_RMS := esp_attr.h
 
 # WPA
-WPA_DIR     := $(IDF_PATH)/components/wpa_supplicant/include/esp_supplicant
+WPA_DIR     := $(IDF_PATH)/components/wpa_supplicant/esp_supplicant/include/
 WPA_SRC_HFS := $(WPA_DIR)/esp_wpa.h \
                $(WPA_DIR)/esp_wpa2.h
 # ESP_Timer
@@ -191,7 +192,7 @@ common_files: inc_dirs
 event_files:
 	@$(call copy_files,$(EVENT_SRC_HFS),$(INCS_DIR))
 	@$(call strip_macros,$(EVENT_DST_HF),$(EVENT_DST_RM))
-	@$(call strip_macros,$(EVENT_LEGACY_DST_HF),$(EVENT_LEGACY_HF_RMS))
+	#@$(call strip_macros,$(EVENT_LEGACY_DST_HF),$(EVENT_LEGACY_HF_RMS))
 
 nvs_files:
 	@$(call copy_files,$(NVS_SRC_HF),$(INCS_DIR))
