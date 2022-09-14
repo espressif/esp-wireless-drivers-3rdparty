@@ -42,6 +42,12 @@ SDKCONFIG_RMS := CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ \
 else ifeq ($(SOC), esp32c3)
 SDKCONFIG_RMS := CONFIG_ESP32C3_DEFAULT_CPU_FREQ_MHZ \
                  CONFIG_PTHREAD_STACK_MIN
+else ifeq ($(SOC), esp32s3)
+SDKCONFIG_RMS := CONFIG_ESP32S3_DEFAULT_CPU_FREQ_MHZ \
+                 CONFIG_PTHREAD_STACK_MIN     
+else ifeq ($(SOC), esp32s2)
+SDKCONFIG_RMS := CONFIG_ESP32S2_DEFAULT_CPU_FREQ_MHZ \
+                 CONFIG_PTHREAD_STACK_MIN                             
 else
 $(error soc=$(SOC) is not supported)
 endif
@@ -49,16 +55,22 @@ endif
 # Libs
 
 IDF_COMPONENTS := wpa_supplicant
-GEN_LIBS  := $(foreach c,$(IDF_COMPONENTS),$(PRJ_DIR)/$(EXAMPLE)/build/esp-idf/$(c)/lib$(c).a)
+GEN_LIBS  := $(foreach c,$(IDF_COMPONENTS),$(PRJ_DIR)/$(EXAMPLE)/build/esp-idf/$(c)/lib$(c).a) $(IDF_PATH)/components/esp_phy/lib/$(SOC)/*
 WIFI_LIBS := $(IDF_PATH)/components/esp_wifi/lib/$(SOC)/*
 ifeq ($(SOC), esp32)
 BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32/esp32/*
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
 else ifeq ($(SOC), esp32c3)
 BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32c3_family/esp32c3/*
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
+else ifeq ($(SOC), esp32s3)
+BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32c3_family/esp32s3/*
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
+else ifeq ($(SOC), esp32s2)
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS)
 else
 $(error "No BT libraries")
 endif
-IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
 
 # Types
 
@@ -220,6 +232,22 @@ bt_files:
 	@$(call copy_files,$(BT_SRC_HF),$(SOC_INCS_DIR))
 	@$(call strip_macros,$(BT_DST_HF),$(BT_HF_RMS))
 
+ifeq ($(SOC), esp32)
 copy_hfiles: config_files wifi_files common_files event_files \
              wpa_files nvs_files esptimer_files espsystem_files \
 			 soc_files bt_files
+else ifeq ($(SOC), esp32c3)
+copy_hfiles: config_files wifi_files common_files event_files \
+             wpa_files nvs_files esptimer_files espsystem_files \
+			 soc_files bt_files
+else ifeq ($(SOC), esp32s3)
+copy_hfiles: config_files wifi_files common_files event_files \
+             wpa_files nvs_files esptimer_files espsystem_files \
+			 soc_files bt_files
+else ifeq ($(SOC), esp32s2)
+copy_hfiles: config_files wifi_files common_files event_files \
+             wpa_files nvs_files esptimer_files espsystem_files \
+			 soc_files
+else
+$(error soc=$(SOC) is not supported)
+endif
