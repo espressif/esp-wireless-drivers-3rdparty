@@ -1,0 +1,2 @@
+branch: feature/hosted_solution_4.4
+commit: fd8e2a33c33f96aa2b9223bd4521711ace34eeb1
