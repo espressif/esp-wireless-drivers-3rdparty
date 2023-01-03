@@ -44,10 +44,16 @@ SDKCONFIG_RMS := CONFIG_ESP32C3_DEFAULT_CPU_FREQ_MHZ \
                  CONFIG_PTHREAD_STACK_MIN
 else ifeq ($(SOC), esp32s3)
 SDKCONFIG_RMS := CONFIG_ESP32S3_DEFAULT_CPU_FREQ_MHZ \
-                 CONFIG_PTHREAD_STACK_MIN     
+                 CONFIG_PTHREAD_STACK_MIN
 else ifeq ($(SOC), esp32s2)
 SDKCONFIG_RMS := CONFIG_ESP32S2_DEFAULT_CPU_FREQ_MHZ \
-                 CONFIG_PTHREAD_STACK_MIN                             
+                 CONFIG_PTHREAD_STACK_MIN
+else ifeq ($(SOC), esp32c2)
+SDKCONFIG_RMS := CONFIG_ESP32C2_DEFAULT_CPU_FREQ_MHZ \
+                 CONFIG_PTHREAD_STACK_MIN
+else ifeq ($(SOC), esp32c6)
+SDKCONFIG_RMS := CONFIG_ESP32C6_DEFAULT_CPU_FREQ_MHZ \
+                 CONFIG_PTHREAD_STACK_MIN
 else
 $(error soc=$(SOC) is not supported)
 endif
@@ -68,6 +74,12 @@ BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32c3_family/esp32s3/*
 IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
 else ifeq ($(SOC), esp32s2)
 IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS)
+else ifeq ($(SOC), esp32c2)
+BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32c2/esp32c2-bt-lib/*
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) $(BT_LIBS)
+else ifeq ($(SOC), esp32c6)
+BT_LIBS   := $(IDF_PATH)/components/bt/controller/lib_esp32c2/esp32c2-bt-lib/*
+IDF_LIBS  := $(GEN_LIBS) $(WIFI_LIBS) # $(BT_LIBS)
 else
 $(error "No BT libraries")
 endif
@@ -86,7 +98,7 @@ WIFI_SRC_HFS := $(WIFI_DIR)/esp_wifi.h \
                 $(WIFI_DIR)/esp_wifi_default.h \
                 $(PHY_DIR)/esp_phy_init.h \
                 $(WIFI_DIR)/esp_wifi_types.h \
-                $(PHY_DIR)/phy.h \
+                $(PHY_DIR)/esp_private/phy.h \
                 $(WIFI_DIR)/esp_wifi_crypto_types.h \
                 $(WIFI_DIR)/esp_smartconfig.h \
                 $(WIFI_DIR)/esp_coexist_adapter.h \
@@ -162,7 +174,6 @@ ESPSYSTEM_HF_RMS := esp_attr.h \
 # SDKCONFIG
 SDKCONFIG_DST_HF := $(SOC_INCS_DIR)/sdkconfig.h
 SDKCONFIG_SRC_HF := $(PRJ_DIR)/$(EXAMPLE)/build/config/sdkconfig.h
-SDKCONFIG_PTH_HF := $(PRJ_DIR)/patch/$(SOC)/sdkconfig.h
 
 # BT/BLE
 BT_SRC_HF := $(IDF_PATH)/components/bt/include/$(SOC)/include/esp_bt.h
@@ -179,7 +190,7 @@ clean:
 	@rm $(LIBS_DIR) $(INCS_DIR) $(SOC_INCS_DIR) -rf
 
 build:
-	@cd $(PRJ_DIR)/$(EXAMPLE) && rm build sdkconfig sdkconfig.old -rf && idf.py -DIDF_TARGET=$(SOC) build
+	@cd $(PRJ_DIR)/$(EXAMPLE) && cp $(PRJ_DIR)/patch/$(SOC)/sdkconfig.defaults sdkconfig.defaults && rm build sdkconfig sdkconfig.old -rf && idf.py -DIDF_TARGET=$(SOC) build
 
 copy_libs: build
 	@mkdir -p $(LIBS_DIR)
@@ -224,7 +235,6 @@ soc_files:
 	@mkdir -p $(SOC_INCS_DIR)
 	@$(call copy_files,$(SOC_HFS),$(SOC_INCS_DIR))
 	@cp $(SDKCONFIG_SRC_HF) $(SOC_INCS_DIR)
-	@cat $(SDKCONFIG_PTH_HF) >> $(SDKCONFIG_DST_HF)
 	@$(call strip_macros,$(SDKCONFIG_DST_HF),$(SDKCONFIG_RMS))
 
 bt_files:
@@ -248,6 +258,14 @@ else ifeq ($(SOC), esp32s2)
 copy_hfiles: config_files wifi_files common_files event_files \
              wpa_files nvs_files esptimer_files espsystem_files \
 			 soc_files
+else ifeq ($(SOC), esp32c2)
+copy_hfiles: config_files wifi_files common_files event_files \
+             wpa_files nvs_files esptimer_files espsystem_files \
+			 soc_files bt_files
+else ifeq ($(SOC), esp32c6)
+copy_hfiles: config_files wifi_files common_files event_files \
+             wpa_files nvs_files esptimer_files espsystem_files \
+			 soc_files # bt_files
 else
 $(error soc=$(SOC) is not supported)
 endif
