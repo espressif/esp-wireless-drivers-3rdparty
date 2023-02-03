@@ -1,0 +1,112 @@
+diff --git a/components/mbedtls/port/esp_mem.c b/components/mbedtls/port/esp_mem.c
+index 902934d92769cc7eaec9b3e0dc619f10cfee211d..0169e90d90e99990c86f8a6921f3987006b51e21 100644
+--- a/components/mbedtls/port/esp_mem.c
++++ b/components/mbedtls/port/esp_mem.c
+@@ -4,38 +4,23 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+-#include <esp_attr.h>
+-#include <esp_heap_caps.h>
++#include <stdlib.h>
++#include <sys/types.h>
++
+ #include <sdkconfig.h>
+-#include "esp_mem.h"
++
++#include "xtensa_attr.h"
+ 
+ #ifndef CONFIG_MBEDTLS_CUSTOM_MEM_ALLOC
+ 
+ IRAM_ATTR void *esp_mbedtls_mem_calloc(size_t n, size_t size)
+ {
+-#ifdef CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC
+-    return heap_caps_calloc(n, size, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+-#elif CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC
+-    return heap_caps_calloc(n, size, MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+-#elif CONFIG_MBEDTLS_IRAM_8BIT_MEM_ALLOC
+-#ifdef CONFIG_MBEDTLS_ASYMMETRIC_CONTENT_LEN
+-    if ((n*size) >= CONFIG_MBEDTLS_SSL_IN_CONTENT_LEN || (n*size) >= CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN) {
+-#else
+-    if ((n*size) >= CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN) {
+-#endif
+-        return heap_caps_calloc_prefer(n, size, 2, MALLOC_CAP_INTERNAL|MALLOC_CAP_IRAM_8BIT, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+-    } else {
+-        return heap_caps_calloc(n, size, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+-    }
+-
+-#else
+     return calloc(n, size);
+-#endif
+ }
+ 
+ IRAM_ATTR void esp_mbedtls_mem_free(void *ptr)
+ {
+-    return heap_caps_free(ptr);
++    return free(ptr);
+ }
+ 
+ #endif /* !CONFIG_MBEDTLS_CUSTOM_MEM_ALLOC */
+diff --git a/components/mbedtls/port/include/bignum_impl.h b/components/mbedtls/port/include/bignum_impl.h
+index cb208ecb56c825eac91517ca686d791bd82e7568..b1e0677d22904629ab6975a2337837b80c7e9905 100644
+--- a/components/mbedtls/port/include/bignum_impl.h
++++ b/components/mbedtls/port/include/bignum_impl.h
+@@ -4,6 +4,24 @@
+ #include <mbedtls/bignum.h>
+ #include <stdbool.h>
+ 
++/** Return the smaller of two values.
++ *
++ * \param x         An integer-valued expression without side effects.
++ * \param y         An integer-valued expression without side effects.
++ *
++ * \return The smaller of \p x and \p y.
++ */
++#define MIN( x, y ) ( ( x ) < ( y ) ? ( x ) : ( y ) )
++
++/** Return the larger of two values.
++ *
++ * \param x         An integer-valued expression without side effects.
++ * \param y         An integer-valued expression without side effects.
++ *
++ * \return The larger of \p x and \p y.
++ */
++#define MAX( x, y ) ( ( x ) > ( y ) ? ( x ) : ( y ) )
++
+ /* Use montgomery exponentiation (HAC 14.94) for calculating X ^ Y mod M,
+    this may be faster for some targets. The hardware acceleration support for modular
+    exponentiation on the ESP32 is slow for public key operations, so use montgomery
+diff --git a/components/mbedtls/port/include/mbedtls/esp_config.h b/components/mbedtls/port/include/mbedtls/esp_config.h
+index dbb70ae01952a5d22b48a672438daad849497920..feee5a7b8ea34ee7249f8136ca709890e3e4807c 100644
+--- a/components/mbedtls/port/include/mbedtls/esp_config.h
++++ b/components/mbedtls/port/include/mbedtls/esp_config.h
+@@ -365,6 +365,8 @@
+  */
+ #ifdef CONFIG_MBEDTLS_CMAC_C
+ #define MBEDTLS_CMAC_C
++#else
++#undef MBEDTLS_CMAC_C
+ #endif
+ 
+ /**
+@@ -1669,7 +1671,7 @@
+  *
+  * This module provides debugging functions.
+  */
+-#if CONFIG_MBEDTLS_DEBUG
++#ifdef CONFIG_MBEDTLS_DEBUG
+ #define MBEDTLS_DEBUG_C
+ #else
+ #undef MBEDTLS_DEBUG_C
+diff --git a/components/mbedtls/port/mbedtls_debug.c b/components/mbedtls/port/mbedtls_debug.c
+index 9af45be7216528f8088498211b2ec4955cd8f595..ddfb948ba99dd3a5b3c519c960d80a0b56739a57 100644
+--- a/components/mbedtls/port/mbedtls_debug.c
++++ b/components/mbedtls/port/mbedtls_debug.c
+@@ -6,7 +6,6 @@
+ 
+ #include <strings.h>
+ 
+-#include "esp_log.h"
+ #include "mbedtls/platform.h"
+ #include "mbedtls/debug.h"
+ #include "mbedtls/ssl.h"
