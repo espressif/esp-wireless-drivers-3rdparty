@@ -1,0 +1,846 @@
+diff --git a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-bignum.c b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-bignum.c
+index a4de750ab713f4c434c8dbaa3dbaf12054431204..b26736136299dc25ca5d3df986b3e63b3b49bcc3 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-bignum.c
++++ b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-bignum.c
+@@ -4,10 +4,8 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+-#ifdef ESP_PLATFORM
+ #include "esp_system.h"
+ #include "mbedtls/bignum.h"
+-#endif
+ 
+ #include "utils/includes.h"
+ #include "utils/common.h"
+@@ -16,6 +14,8 @@
+ #include "sha256.h"
+ #include "mbedtls/pk.h"
+ 
++#define ALLOW_EVEN_MOD 1
++
+ static int crypto_rng_wrapper(void *ctx, unsigned char *buf, size_t len)
+ {
+     return random_get_bytes(buf, len);
+diff --git a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c
+index 41f7c0227ba74a2047a58380157286b6fc1e2c5d..1e90f08f47ca06fc198c605be65a39707d636a04 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c
++++ b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c
+@@ -6,10 +6,8 @@
+ 
+ #define MBEDTLS_ALLOW_PRIVATE_ACCESS
+ 
+-#ifdef ESP_PLATFORM
+ #include "esp_system.h"
+ #include "mbedtls/bignum.h"
+-#endif
+ 
+ #include "utils/includes.h"
+ #include "utils/common.h"
+diff --git a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-rsa.c b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-rsa.c
+index 705dd9924ca4747eb0711cbc90f77a2419c5bf28..68622a0f69603867c124f64dc311aae66016714b 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-rsa.c
++++ b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-rsa.c
+@@ -4,9 +4,7 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+-#ifdef ESP_PLATFORM
+ #include "mbedtls/bignum.h"
+-#endif
+ 
+ #include "utils/includes.h"
+ #include "utils/common.h"
+diff --git a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls.c b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls.c
+index 137f15dfcddf1b2b57c2a8c396f18e10f0825e78..b8d1f7eb127759f7a48efeaa43487e04c2cb38b8 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls.c
++++ b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls.c
+@@ -34,7 +34,6 @@
+ #include "sha384.h"
+ #include "aes_wrap.h"
+ #include "crypto.h"
+-#include "mbedtls/esp_config.h"
+ 
+ static int digest_vector(mbedtls_md_type_t md_type, size_t num_elem,
+ 			 const u8 *addr[], const size_t *len, u8 *mac)
+diff --git a/components/wpa_supplicant/esp_supplicant/src/esp_wifi_driver.h b/components/wpa_supplicant/esp_supplicant/src/esp_wifi_driver.h
+index b7662e04373b9c5408aff2f8fda18edbb483be6b..d3995a060025cf1f1835ddf96a9f1d6abf9ee226 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/esp_wifi_driver.h
++++ b/components/wpa_supplicant/esp_supplicant/src/esp_wifi_driver.h
+@@ -9,6 +9,7 @@
+ 
+ #include "esp_err.h"
+ #include "esp_wifi.h"
++#include "utils/common.h"
+ 
+ #if CONFIG_NEWLIB_NANO_FORMAT
+ #define TASK_STACK_SIZE_ADD 0
+diff --git a/components/wpa_supplicant/esp_supplicant/src/esp_wpa_main.c b/components/wpa_supplicant/esp_supplicant/src/esp_wpa_main.c
+index 8f62e5fd74abf7ea7742403f56d78a5d9fe9fada..acbde59963efbf4c280b1e479672e1de6868305a 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/esp_wpa_main.c
++++ b/components/wpa_supplicant/esp_supplicant/src/esp_wpa_main.c
+@@ -359,7 +359,7 @@ int esp_supplicant_init(void)
+ 
+     esp_wifi_register_wpa_cb_internal(wpa_cb);
+ 
+-#if CONFIG_WPA_WAPI_PSK
++#ifdef CONFIG_WPA_WAPI_PSK
+     ret =  esp_wifi_internal_wapi_init();
+ #endif
+ 
+diff --git a/components/wpa_supplicant/include/utils/wpa_debug.h b/components/wpa_supplicant/include/utils/wpa_debug.h
+index 02f1fb4f4e7e771d4c0a5149c3e42e59c3db2b73..799c0bd99bcec60c572264f6697b4c5bb333cd43 100644
+--- a/components/wpa_supplicant/include/utils/wpa_debug.h
++++ b/components/wpa_supplicant/include/utils/wpa_debug.h
+@@ -16,27 +16,33 @@
+ #define WPA_DEBUG_H
+ 
+ #include "wpabuf.h"
+-#include "esp_log.h"
+ #include "supplicant_opt.h"
+ 
+-#ifdef ESPRESSIF_USE
+-
+ #define TAG "wpa"
+ 
+-#define MSG_ERROR ESP_LOG_ERROR
+-#define MSG_WARNING ESP_LOG_WARN
+-#define MSG_INFO ESP_LOG_INFO
+-#define MSG_DEBUG ESP_LOG_DEBUG
+-#define MSG_MSGDUMP ESP_LOG_VERBOSE
+-#define MSG_EXCESSIVE ESP_LOG_VERBOSE
+-
+-#else
+-enum { MSG_MSGDUMP, MSG_DEBUG, MSG_INFO, MSG_WARNING, MSG_ERROR };
+-#endif
+-
+ /** EAP authentication completed successfully */
+ #define WPA_EVENT_EAP_SUCCESS "CTRL-EVENT-EAP-SUCCESS "
+ 
++enum { MSG_EXCESSIVE, MSG_MSGDUMP, MSG_DEBUG, MSG_INFO, MSG_WARNING, MSG_ERROR };
++
++#ifndef DEBUG_PRINT
++
++static inline void wpa_printf(int level, const char *fmt, ...)
++{
++	return ;
++}
++
++#define wpa_hexdump(...) do {} while(0)
++#define wpa_dump_mem(...) do {} while(0)
++#define wpa_hexdump_buf(...) do {} while(0)
++#define wpa_hexdump_key(...) do {} while(0)
++#define wpa_hexdump_buf_key(...) do {} while(0)
++#define wpa_hexdump_ascii(...) do {} while(0)
++#define wpa_hexdump_ascii_key(...) do {} while(0)
++#define wpa_dbg(...) do {} while(0)
++
++#else
++
+ int wpa_debug_open_file(const char *path);
+ void wpa_debug_close_file(void);
+ 
+@@ -49,7 +55,6 @@ void wpa_debug_close_file(void);
+  */
+ void wpa_debug_print_timestamp(void);
+ 
+-#ifdef DEBUG_PRINT
+ /**
+  * wpa_printf - conditional printf
+  * @level: priority level (MSG_*) of the message
+@@ -61,7 +66,8 @@ void wpa_debug_print_timestamp(void);
+  *
+  * Note: New line '\n' is added to the end of the text when printing to stdout.
+  */
+-#define wpa_printf(level,fmt, args...) ESP_LOG_LEVEL_LOCAL(level, TAG, fmt, ##args)
++void wpa_printf(int level, const char *fmt, ...)
++PRINTF_FORMAT(2, 3);
+ #define wpa_dbg(ctx, level, fmt, args...) wpa_printf(level, fmt, ##args)
+ 
+ void wpa_dump_mem(char* desc, uint8_t *addr, uint16_t len);
+@@ -148,16 +154,6 @@ void wpa_hexdump_ascii(int level, const char *title, const void *buf,
+  */
+ void wpa_hexdump_ascii_key(int level, const char *title, const void *buf,
+ 			   size_t len);
+-#else
+-#define wpa_printf(level,fmt, args...) do {} while(0)
+-#define wpa_hexdump(...) do {} while(0)
+-#define wpa_dump_mem(...) do {} while(0)
+-#define wpa_hexdump_buf(...) do {} while(0)
+-#define wpa_hexdump_key(...) do {} while(0)
+-#define wpa_hexdump_buf_key(...) do {} while(0)
+-#define wpa_hexdump_ascii(...) do {} while(0)
+-#define wpa_hexdump_ascii_key(...) do {} while(0)
+-#define wpa_dbg(...) do {} while(0)
+ #endif
+ 
+ #define wpa_auth_logger(...) do {} while(0)
+diff --git a/components/wpa_supplicant/port/eloop.c b/components/wpa_supplicant/port/eloop.c
+index 4b2f598af10a6edf60ba573a53b91b24cacfdb99..90162cd83f1c4442aff9df7bf075216314e5394c 100644
+--- a/components/wpa_supplicant/port/eloop.c
++++ b/components/wpa_supplicant/port/eloop.c
+@@ -15,8 +15,8 @@
+ 
+ #include "common.h"
+ #include "list.h"
+-#include "eloop.h"
+ #include "esp_wifi_driver.h"
++#include "eloop.h"
+ 
+ struct eloop_timeout {
+ 	struct dl_list list;
+diff --git a/components/wpa_supplicant/port/include/endian.h b/components/wpa_supplicant/port/include/endian.h
+deleted file mode 100644
+index 3527cea65868af134da24cafc801b215dbfbc4e4..0000000000000000000000000000000000000000
+--- a/components/wpa_supplicant/port/include/endian.h
++++ /dev/null
+@@ -1,226 +0,0 @@
+-/*-
+- * Copyright (c) 2002 Thomas Moestl <tmm@FreeBSD.org>
+- * All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions
+- * are met:
+- * 1. Redistributions of source code must retain the above copyright
+- *    notice, this list of conditions and the following disclaimer.
+- * 2. Redistributions in binary form must reproduce the above copyright
+- *    notice, this list of conditions and the following disclaimer in the
+- *    documentation and/or other materials provided with the distribution.
+- *
+- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+- * SUCH DAMAGE.
+- *
+- * $FreeBSD$
+- */
+-
+-#ifndef _ENDIAN_H_
+-#define _ENDIAN_H_
+-
+-#include <stdint.h>
+-#include <sys/types.h>
+-#include "byteswap.h"
+-
+-#ifndef BIG_ENDIAN
+-#define BIG_ENDIAN 4321
+-#endif
+-#ifndef LITTLE_ENDIAN
+-#define LITTLE_ENDIAN 1234
+-#endif
+-
+-#ifndef BYTE_ORDER
+-#ifdef __IEEE_LITTLE_ENDIAN
+-#define BYTE_ORDER LITTLE_ENDIAN
+-#else
+-#define BYTE_ORDER BIG_ENDIAN
+-#endif
+-#endif
+-
+-#define _UINT8_T_DECLARED
+-#ifndef _UINT8_T_DECLARED
+-typedef	__uint8_t	uint8_t;
+-#define	_UINT8_T_DECLARED
+-#endif
+-
+-#define _UINT16_T_DECLARED
+-#ifndef _UINT16_T_DECLARED
+-typedef	__uint16_t	uint16_t;
+-#define	_UINT16_T_DECLARED
+-#endif
+-
+-#define _UINT32_T_DECLARED
+-#ifndef _UINT32_T_DECLARED
+-typedef	__uint32_t	uint32_t;
+-#define	_UINT32_T_DECLARED
+-#endif
+-
+-#define _UINT64_T_DECLARED
+-#ifndef _UINT64_T_DECLARED
+-typedef	__uint64_t	uint64_t;
+-#define	_UINT64_T_DECLARED
+-#endif
+-
+-/*
+- * General byte order swapping functions.
+- */
+-#define	bswap16(x)	__bswap16(x)
+-#define	bswap32(x)	__bswap32(x)
+-#define	bswap64(x)	__bswap64(x)
+-
+-/*
+- * Host to big endian, host to little endian, big endian to host, and little
+- * endian to host byte order functions as detailed in byteorder(9).
+- */
+-#if BYTE_ORDER == _LITTLE_ENDIAN
+-#define	htobe16(x)	bswap16((x))
+-#define	htobe32(x)	bswap32((x))
+-#define	htobe64(x)	bswap64((x))
+-#define	htole16(x)	((uint16_t)(x))
+-#define	htole32(x)	((uint32_t)(x))
+-#define	htole64(x)	((uint64_t)(x))
+-
+-#define	be16toh(x)	bswap16((x))
+-#define	be32toh(x)	bswap32((x))
+-#define	be64toh(x)	bswap64((x))
+-#define	le16toh(x)	((uint16_t)(x))
+-#define	le32toh(x)	((uint32_t)(x))
+-#define	le64toh(x)	((uint64_t)(x))
+-
+-#else /* _BYTE_ORDER != _LITTLE_ENDIAN */
+-#define	htobe16(x)	((uint16_t)(x))
+-#define	htobe32(x)	((uint32_t)(x))
+-#define	htobe64(x)	((uint64_t)(x))
+-#define	htole16(x)	bswap16((x))
+-#define	htole32(x)	bswap32((x))
+-#define	htole64(x)	bswap64((x))
+-
+-#define	be16toh(x)	((uint16_t)(x))
+-#define	be32toh(x)	((uint32_t)(x))
+-#define	be64toh(x)	((uint64_t)(x))
+-#define	le16toh(x)	bswap16((x))
+-#define	le32toh(x)	bswap32((x))
+-#define	le64toh(x)	bswap64((x))
+-#endif /* _BYTE_ORDER == _LITTLE_ENDIAN */
+-
+-/* Alignment-agnostic encode/decode bytestream to/from little/big endian. */
+-#define INLINE                  __inline__
+-
+-static INLINE uint16_t
+-be16dec(const void *pp)
+-{
+-	uint8_t const *p = (uint8_t const *)pp;
+-
+-	return ((p[0] << 8) | p[1]);
+-}
+-
+-static INLINE uint32_t
+-be32dec(const void *pp)
+-{
+-	uint8_t const *p = (uint8_t const *)pp;
+-
+-	return (((unsigned)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]);
+-}
+-
+-static INLINE uint64_t
+-be64dec(const void *pp)
+-{
+-	uint8_t const *p = (uint8_t const *)pp;
+-
+-	return (((uint64_t)be32dec(p) << 32) | be32dec(p + 4));
+-}
+-
+-static INLINE uint16_t
+-le16dec(const void *pp)
+-{
+-	uint8_t const *p = (uint8_t const *)pp;
+-
+-	return ((p[1] << 8) | p[0]);
+-}
+-
+-static INLINE uint32_t
+-le32dec(const void *pp)
+-{
+-	uint8_t const *p = (uint8_t const *)pp;
+-
+-	return (((unsigned)p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]);
+-}
+-
+-static INLINE uint64_t
+-le64dec(const void *pp)
+-{
+-	uint8_t const *p = (uint8_t const *)pp;
+-
+-	return (((uint64_t)le32dec(p + 4) << 32) | le32dec(p));
+-}
+-
+-static INLINE void
+-be16enc(void *pp, uint16_t u)
+-{
+-	uint8_t *p = (uint8_t *)pp;
+-
+-	p[0] = (u >> 8) & 0xff;
+-	p[1] = u & 0xff;
+-}
+-
+-static INLINE void
+-be32enc(void *pp, uint32_t u)
+-{
+-	uint8_t *p = (uint8_t *)pp;
+-
+-	p[0] = (u >> 24) & 0xff;
+-	p[1] = (u >> 16) & 0xff;
+-	p[2] = (u >> 8) & 0xff;
+-	p[3] = u & 0xff;
+-}
+-
+-static INLINE void
+-be64enc(void *pp, uint64_t u)
+-{
+-	uint8_t *p = (uint8_t *)pp;
+-
+-	be32enc(p, (uint32_t)(u >> 32));
+-	be32enc(p + 4, (uint32_t)(u & 0xffffffffU));
+-}
+-
+-static INLINE void
+-le16enc(void *pp, uint16_t u)
+-{
+-	uint8_t *p = (uint8_t *)pp;
+-
+-	p[0] = u & 0xff;
+-	p[1] = (u >> 8) & 0xff;
+-}
+-
+-static INLINE void
+-le32enc(void *pp, uint32_t u)
+-{
+-	uint8_t *p = (uint8_t *)pp;
+-
+-	p[0] = u & 0xff;
+-	p[1] = (u >> 8) & 0xff;
+-	p[2] = (u >> 16) & 0xff;
+-	p[3] = (u >> 24) & 0xff;
+-}
+-
+-static INLINE void
+-le64enc(void *pp, uint64_t u)
+-{
+-	uint8_t *p = (uint8_t *)pp;
+-
+-	le32enc(p, (uint32_t)(u & 0xffffffffU));
+-	le32enc(p + 4, (uint32_t)(u >> 32));
+-}
+-
+-#endif	/* _ENDIAN_H_ */
+diff --git a/components/wpa_supplicant/port/include/os.h b/components/wpa_supplicant/port/include/os.h
+index dbd91af7afa92dd21bb944423f284a7ac50dd11b..1ae14e89efcc3fc15a02d0372cbd72f07a262816 100644
+--- a/components/wpa_supplicant/port/include/os.h
++++ b/components/wpa_supplicant/port/include/os.h
+@@ -14,13 +14,12 @@
+ 
+ #ifndef OS_H
+ #define OS_H
+-#include "esp_types.h"
+ #include <string.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include "esp_err.h"
+ #include "supplicant_opt.h"
+-#include "esp_wifi.h"
++#include "espidf_wifi.h"
+ 
+ typedef time_t os_time_t;
+ 
+diff --git a/components/wpa_supplicant/port/include/supplicant_opt.h b/components/wpa_supplicant/port/include/supplicant_opt.h
+index 2eb91956f6239076194ff525f46c0f9781803a6f..595574f713ef1caf5793d81bf27ba6cbfb0c46ea 100644
+--- a/components/wpa_supplicant/port/include/supplicant_opt.h
++++ b/components/wpa_supplicant/port/include/supplicant_opt.h
+@@ -9,7 +9,7 @@
+ 
+ #include "sdkconfig.h"
+ 
+-#if CONFIG_WPA_DEBUG_PRINT
++#ifdef CONFIG_WPA_DEBUG_PRINT
+ #define DEBUG_PRINT
+ #if defined(CONFIG_LOG_DEFAULT_LEVEL_DEBUG) || defined(CONFIG_LOG_DEFAULT_LEVEL_VERBOSE)
+ #define ELOOP_DEBUG
+diff --git a/components/wpa_supplicant/port/os_xtensa.c b/components/wpa_supplicant/port/os_xtensa.c
+index 2f522eb30ea58f56f5c63792448cd0a731effd8a..ca90e886fee853bfc4b613150f04269bc23f4884 100644
+--- a/components/wpa_supplicant/port/os_xtensa.c
++++ b/components/wpa_supplicant/port/os_xtensa.c
+@@ -26,7 +26,7 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <sys/time.h>
+-#include "esp_random.h"
++#include "esp_system.h"
+ #include "utils/common.h"
+ #include "mbedtls/platform_util.h"
+ 
+diff --git a/components/wpa_supplicant/src/common/wpa_common.c b/components/wpa_supplicant/src/common/wpa_common.c
+index d799463be71e4098674fb8fdf28024244ca44a64..a3dbdd34e6f8630323bee2bde3fd19de34b20eed 100644
+--- a/components/wpa_supplicant/src/common/wpa_common.c
++++ b/components/wpa_supplicant/src/common/wpa_common.c
+@@ -1033,7 +1033,6 @@ int rsn_pmkid_suite_b_192(const u8 *kck, size_t kck_len, const u8 *aa,
+ }
+ #endif /* CONFIG_SUITEB192 */
+ 
+-#ifdef DEBUG_PRINT
+ /**
+  * wpa_cipher_txt - Convert cipher suite to a text string
+  * @cipher: Cipher suite (WPA_CIPHER_* enum)
+@@ -1066,7 +1065,6 @@ const char * wpa_cipher_txt(int cipher)
+ 		return "UNKNOWN";
+ 	}
+ }
+-#endif
+ 
+ /**
+  * wpa_pmk_to_ptk - Calculate PTK from PMK, addresses, and nonces
+@@ -1391,7 +1389,7 @@ u32 wpa_cipher_to_suite(int proto, int cipher)
+ 			RSN_CIPHER_SUITE_NONE : WPA_CIPHER_SUITE_NONE);
+ 	if (cipher & WPA_CIPHER_AES_128_CMAC)
+ 		return RSN_CIPHER_SUITE_AES_128_CMAC;
+-#if CONFIG_GMAC
++#ifdef CONFIG_GMAC
+ 	if (cipher & WPA_CIPHER_BIP_GMAC_128)
+ 		return RSN_CIPHER_SUITE_BIP_GMAC_128;
+ 	if (cipher & WPA_CIPHER_BIP_GMAC_256)
+diff --git a/components/wpa_supplicant/src/crypto/aes-ccm.c b/components/wpa_supplicant/src/crypto/aes-ccm.c
+index 507c8f5458e4015bf11114456c12f2007522a2aa..f8bac1b3eb8aa71cafbe4cce4499ded8b6530de1 100644
+--- a/components/wpa_supplicant/src/crypto/aes-ccm.c
++++ b/components/wpa_supplicant/src/crypto/aes-ccm.c
+@@ -10,7 +10,7 @@
+ #ifdef CONFIG_IEEE80211W
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "aes.h"
+ #include "aes_wrap.h"
+ 
+diff --git a/components/wpa_supplicant/src/crypto/aes-gcm.c b/components/wpa_supplicant/src/crypto/aes-gcm.c
+index 0a937f5e6bb44e841eb4f3cce8f89ac437587e74..fb8038ee6b25f08f67675852b17fd631edda7948 100644
+--- a/components/wpa_supplicant/src/crypto/aes-gcm.c
++++ b/components/wpa_supplicant/src/crypto/aes-gcm.c
+@@ -9,7 +9,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "aes.h"
+ #include "aes_wrap.h"
+ 
+diff --git a/components/wpa_supplicant/src/crypto/aes-omac1.c b/components/wpa_supplicant/src/crypto/aes-omac1.c
+index 0a3420492ecf1697a3a3cb4321b97d789246c65a..abfe248aced9fc728a79c8e4d7b99eb04908fbd6 100644
+--- a/components/wpa_supplicant/src/crypto/aes-omac1.c
++++ b/components/wpa_supplicant/src/crypto/aes-omac1.c
+@@ -9,7 +9,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "aes.h"
+ #include "aes_wrap.h"
+ 
+diff --git a/components/wpa_supplicant/src/crypto/aes-unwrap.c b/components/wpa_supplicant/src/crypto/aes-unwrap.c
+index b3cb0e5c9a038047d636c659e28a5fa401251b0e..5d961e62e678352711221ca5a8d778141a34df4d 100644
+--- a/components/wpa_supplicant/src/crypto/aes-unwrap.c
++++ b/components/wpa_supplicant/src/crypto/aes-unwrap.c
+@@ -9,7 +9,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "aes.h"
+ #include "aes_wrap.h"
+ 
+diff --git a/components/wpa_supplicant/src/crypto/aes-wrap.c b/components/wpa_supplicant/src/crypto/aes-wrap.c
+index 2c6be608f2b5721147aa279d42b2742dc2c8105c..1562a1031739ecbb9ce32d48412bc320f2e33a1d 100644
+--- a/components/wpa_supplicant/src/crypto/aes-wrap.c
++++ b/components/wpa_supplicant/src/crypto/aes-wrap.c
+@@ -9,7 +9,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "aes.h"
+ #include "aes_wrap.h"
+ 
+diff --git a/components/wpa_supplicant/src/crypto/crypto_ops.c b/components/wpa_supplicant/src/crypto/crypto_ops.c
+index d87d67f7abbbcb7db756e6a874d0a2bcad12d787..fe0f55652826ffb13544e392bc42604ae064f513 100644
+--- a/components/wpa_supplicant/src/crypto/crypto_ops.c
++++ b/components/wpa_supplicant/src/crypto/crypto_ops.c
+@@ -39,7 +39,7 @@ static void esp_aes_decrypt(void *ctx, const u8 *crypt, u8 *plain)
+ static int esp_aes_gmac(const u8 *key, size_t esp_key_len, const u8 *iv, size_t iv_len,
+ 			const u8 *aad, size_t aad_len, u8 *tag)
+ {
+-#if CONFIG_GMAC
++#ifdef CONFIG_GMAC
+ 	return aes_gmac(key, esp_key_len, iv, iv_len, aad, aad_len, tag);
+ #else
+ 	return 0;
+diff --git a/components/wpa_supplicant/src/crypto/sha1-prf.c b/components/wpa_supplicant/src/crypto/sha1-prf.c
+index 24c63477845da210b83a884c84d0df14c2197015..427dc21ccf33d76f25aab3dcaf6aea2deef5300c 100644
+--- a/components/wpa_supplicant/src/crypto/sha1-prf.c
++++ b/components/wpa_supplicant/src/crypto/sha1-prf.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "sha1.h"
+ #include "crypto.h"
+ 
+diff --git a/components/wpa_supplicant/src/crypto/sha256-kdf.c b/components/wpa_supplicant/src/crypto/sha256-kdf.c
+index 5a6b744552d6a7c9e4c5445535d44d32c81c7605..beba2e2c07f8d5e76f74b77ae3449d84d19babff 100644
+--- a/components/wpa_supplicant/src/crypto/sha256-kdf.c
++++ b/components/wpa_supplicant/src/crypto/sha256-kdf.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "sha256.h"
+ 
+ 
+diff --git a/components/wpa_supplicant/src/crypto/sha256-prf.c b/components/wpa_supplicant/src/crypto/sha256-prf.c
+index 656de59772f7f19dc902cf61b125eae12908b6c3..9de2ff29e2a5a54a14cc5ad89b2b1de24919b988 100644
+--- a/components/wpa_supplicant/src/crypto/sha256-prf.c
++++ b/components/wpa_supplicant/src/crypto/sha256-prf.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "sha256.h"
+ #include "crypto.h"
+ 
+diff --git a/components/wpa_supplicant/src/eap_common/eap_wsc_common.c b/components/wpa_supplicant/src/eap_common/eap_wsc_common.c
+index 13b24ef1e7449f2032d540d925d0d8f4e940e051..56006ef34ef7a2860de483871040e2664386ee03 100644
+--- a/components/wpa_supplicant/src/eap_common/eap_wsc_common.c
++++ b/components/wpa_supplicant/src/eap_common/eap_wsc_common.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "eap_peer/eap_defs.h"
+ #include "eap_peer/eap_common.h"
+ #include "wps/wps.h"
+diff --git a/components/wpa_supplicant/src/eap_peer/eap_tls_common.c b/components/wpa_supplicant/src/eap_peer/eap_tls_common.c
+index bb13ccf8dc20fe84a8795a48759348be60d2e3b2..7b664373b449ba16b04594c7815cdfc1c2546c8a 100644
+--- a/components/wpa_supplicant/src/eap_peer/eap_tls_common.c
++++ b/components/wpa_supplicant/src/eap_peer/eap_tls_common.c
+@@ -1019,15 +1019,14 @@ get_defaults:
+ int eap_peer_tls_phase2_nak(struct eap_method_type *types, size_t num_types,
+ 			    struct eap_hdr *hdr, struct wpabuf **resp)
+ {
+-#ifdef DEBUG_PRINT
+ 	u8 *pos = (u8 *) (hdr + 1);
+-#endif
+ 	size_t i;
+ 
+ 	/* TODO: add support for expanded Nak */
+ 	wpa_printf(MSG_DEBUG, "TLS: Phase Request: Nak type=%d\n", *pos);
+ 	wpa_hexdump(MSG_DEBUG, "TLS: Allowed Phase2 EAP types",
+ 		    (u8 *) types, num_types * sizeof(struct eap_method_type));
++
+ 	*resp = eap_msg_alloc(EAP_VENDOR_IETF, EAP_TYPE_NAK, num_types,
+ 			      EAP_CODE_RESPONSE, hdr->identifier);
+ 	if (*resp == NULL)
+diff --git a/components/wpa_supplicant/src/eap_server/eap_server.c b/components/wpa_supplicant/src/eap_server/eap_server.c
+index a0aaf8e652fa91c41e1d2be4b0f197d9739eb738..8fc0057ddc5388cc0f21b8628889f9edc43f1b08 100644
+--- a/components/wpa_supplicant/src/eap_server/eap_server.c
++++ b/components/wpa_supplicant/src/eap_server/eap_server.c
+@@ -14,7 +14,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "crypto/sha256.h"
+ #include "eap_i.h"
+ #include "state_machine.h"
+diff --git a/components/wpa_supplicant/src/eap_server/eap_server_identity.c b/components/wpa_supplicant/src/eap_server/eap_server_identity.c
+index 0f707c482c5b490e93926cc3b7dbbb7ff6f8e023..e7b814e0579da6b289aa209ab604b25ae963567d 100644
+--- a/components/wpa_supplicant/src/eap_server/eap_server_identity.c
++++ b/components/wpa_supplicant/src/eap_server/eap_server_identity.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "eap_i.h"
+ 
+ 
+diff --git a/components/wpa_supplicant/src/eap_server/eap_server_methods.c b/components/wpa_supplicant/src/eap_server/eap_server_methods.c
+index f37c9c3835945751015f688bed84c8f72c21c105..15876d00357765563b84bf8b982c545576170e70 100644
+--- a/components/wpa_supplicant/src/eap_server/eap_server_methods.c
++++ b/components/wpa_supplicant/src/eap_server/eap_server_methods.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "eap_i.h"
+ #include "eap_methods.h"
+ 
+diff --git a/components/wpa_supplicant/src/eap_server/eap_server_wsc.c b/components/wpa_supplicant/src/eap_server/eap_server_wsc.c
+index f3c4756257f2f1faf694eb04c7ba61d2cd6eebaa..2923419df39a4d79045c29dcebec9822840384a8 100644
+--- a/components/wpa_supplicant/src/eap_server/eap_server_wsc.c
++++ b/components/wpa_supplicant/src/eap_server/eap_server_wsc.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "eloop.h"
+ #include "eap_i.h"
+ #include "eap_common/eap_wsc_common.h"
+diff --git a/components/wpa_supplicant/src/eapol_auth/eapol_auth_sm.c b/components/wpa_supplicant/src/eapol_auth/eapol_auth_sm.c
+index c77f40b00e16aecb67fe643733d839457cab6a74..ec6951f34170e281dcd8aea4236a7e78e4e1956b 100644
+--- a/components/wpa_supplicant/src/eapol_auth/eapol_auth_sm.c
++++ b/components/wpa_supplicant/src/eapol_auth/eapol_auth_sm.c
+@@ -8,7 +8,7 @@
+ 
+ #include "includes.h"
+ 
+-#include "common.h"
++#include "utils/common.h"
+ #include "eloop.h"
+ #include "state_machine.h"
+ #include "common/eapol_common.h"
+diff --git a/components/wpa_supplicant/src/rsn_supp/pmksa_cache.c b/components/wpa_supplicant/src/rsn_supp/pmksa_cache.c
+index 136a66d4d6f4ba0dc17b9ae5df80538a1129ef44..064792e1520f1bec1d3fe7b6725c05f06c5b2790 100644
+--- a/components/wpa_supplicant/src/rsn_supp/pmksa_cache.c
++++ b/components/wpa_supplicant/src/rsn_supp/pmksa_cache.c
+@@ -7,8 +7,8 @@
+  */
+ 
+ #include "includes.h"
+-#include "common.h"
+-#include "eloop.h"
++#include "utils/common.h"
++#include "utils/eloop.h"
+ #include "rsn_supp/wpa.h"
+ #include "rsn_supp/wpa_i.h"
+ #include "common/eapol_common.h"
+diff --git a/components/wpa_supplicant/src/rsn_supp/wpa.c b/components/wpa_supplicant/src/rsn_supp/wpa.c
+index 5fc90b4c78bf77843940c64d9e5e9e93f44e32a3..6a507835ad6a86995b0c492fd12a886e556e1519 100644
+--- a/components/wpa_supplicant/src/rsn_supp/wpa.c
++++ b/components/wpa_supplicant/src/rsn_supp/wpa.c
+@@ -30,7 +30,6 @@
+ #include "crypto/aes_wrap.h"
+ #include "crypto/ccmp.h"
+ #include "crypto/sha256.h"
+-#include "esp_rom_sys.h"
+ #include "common/bss.h"
+ #include "esp_common_i.h"
+ #include "esp_owe_i.h"
+@@ -2701,7 +2700,7 @@ int wpa_michael_mic_failure(u16 isunicast)
+          * Need to wait for completion of request frame. We do not get
+          * any callback for the message completion, so just wait a
+          * short while and hope for the best. */
+-         esp_rom_delay_us(10000);
++         up_udelay(10000);
+ 
+         /*deauthenticate AP*/
+ 
+diff --git a/components/wpa_supplicant/src/utils/common.h b/components/wpa_supplicant/src/utils/common.h
+index 31fa00a0d4d50a3981d524f7affd30c23b9cbc68..18b597910942bb3c3f70cdfff174fbff18a1693d 100644
+--- a/components/wpa_supplicant/src/utils/common.h
++++ b/components/wpa_supplicant/src/utils/common.h
+@@ -16,7 +16,6 @@
+ #include "list.h"
+ 
+ /* Define platform specific variable type macros */
+-#if defined(ESP_PLATFORM)
+ #include <stdint.h>
+ typedef uint64_t u64;
+ typedef uint32_t u32;
+@@ -26,7 +25,6 @@ typedef int64_t s64;
+ typedef int32_t s32;
+ typedef int16_t s16;
+ typedef int8_t s8;
+-#endif /*ESP_PLATFORM*/
+ 
+ #if defined(__linux__) || defined(__GLIBC__)
+ #include <endian.h>
+diff --git a/components/wpa_supplicant/src/utils/includes.h b/components/wpa_supplicant/src/utils/includes.h
+index 45a2da95ce7e63ee66b4d031afad33c0225f56d7..51733c217c5e21933ff8849b1f50b9baec22ec07 100644
+--- a/components/wpa_supplicant/src/utils/includes.h
++++ b/components/wpa_supplicant/src/utils/includes.h
+@@ -59,6 +59,7 @@
+ 
+ #else
+ // for ETSTimer type
++// for ETSTimer type
+ #if CONFIG_IDF_TARGET_ESP32
+ #include "esp32/rom/ets_sys.h"
+ #elif CONFIG_IDF_TARGET_ESP32S2
+@@ -73,6 +74,8 @@
+ #include "esp32h2/rom/ets_sys.h"
+ #endif
+ 
++#include "espidf_wifi.h"
++
+ #endif /* !__ets__ */
+ 
+ #endif /* INCLUDES_H */
+diff --git a/components/wpa_supplicant/src/utils/wpa_debug.c b/components/wpa_supplicant/src/utils/wpa_debug.c
+index ca75f7483733a892e078275f064bb3d879ac69bf..036c2566c8b22cb03ff9330376e6b982b9334f96 100644
+--- a/components/wpa_supplicant/src/utils/wpa_debug.c
++++ b/components/wpa_supplicant/src/utils/wpa_debug.c
+@@ -8,7 +8,37 @@
+ #ifdef ESP_SUPPLICANT
+ #include "utils/includes.h"
+ #include "utils/common.h"
+-#include "utils/wpa_debug.h"
++
++int wpa_debug_level = MSG_DEBUG;
++
++#ifdef DEBUG_PRINT
++
++/**
++ * wpa_printf - conditional printf
++ * @level: priority level (MSG_*) of the message
++ * @fmt: printf format string, followed by optional arguments
++ *
++ * This function is used to print conditional debugging and error messages. The
++ * output may be directed to stdout, stderr, and/or syslog based on
++ * configuration.
++ *
++ * Note: New line '\n' is added to the end of the text when printing to stdout.
++ */
++void wpa_printf(int level, const char *fmt, ...)
++{
++	va_list ap;
++
++	va_start(ap, fmt);
++	if (level >= wpa_debug_level) {
++		wpa_debug_print_timestamp();
++		vprintf(fmt, ap);
++		printf("\n");
++        fflush(stdout);
++	}
++	va_end(ap);
++}
++
++#endif /* DEBUG_PRINT */
+ 
+ static inline int
+ _wpa_snprintf_hex(char *buf, size_t buf_size, const u8 *data, size_t len,
+@@ -72,11 +102,7 @@ void  wpa_dump_mem(char* desc, uint8_t *addr, uint16_t len)
+ 
+ void  wpa_debug_print_timestamp(void)
+ {
+-#ifdef DEBUG_PRINT
+-    struct os_time tv;
+-    os_get_time(&tv);
+-    wpa_printf(MSG_DEBUG, "%ld.%06u: ", (long) tv.sec, (unsigned int) tv.usec);
+-#endif
++    return;
+ }
+ 
+ void  wpa_hexdump(int level, const char *title, const u8 *buf, size_t len)

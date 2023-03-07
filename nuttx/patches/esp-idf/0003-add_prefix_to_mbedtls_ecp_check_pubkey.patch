@@ -1,0 +1,208 @@
+diff --git a/components/bt/controller/esp32c2/bt.c b/components/bt/controller/esp32c2/bt.c
+index 25d1e699ba5947676bd90086ff060ed48b78c182..7bcd166db5a62f2800e3b275af9309776e1d92e0 100644
+--- a/components/bt/controller/esp32c2/bt.c
++++ b/components/bt/controller/esp32c2/bt.c
+@@ -1034,7 +1034,7 @@ int ble_sm_alg_gen_dhkey(const uint8_t *peer_pub_key_x, const uint8_t *peer_pub_
+         goto exit;
+     }
+ 
+-    if (mbedtls_ecp_check_pubkey(&keypair.MBEDTLS_PRIVATE(grp), &pt) != 0) {
++    if (esp_mbedtls_ecp_check_pubkey(&keypair.MBEDTLS_PRIVATE(grp), &pt) != 0) {
+         goto exit;
+     }
+ 
+diff --git a/components/bt/controller/esp32h2/bt.c b/components/bt/controller/esp32h2/bt.c
+index 2ce34023e32ff836fb813c5168babec11aa7f463..23668891a69720c991e8ea3c09565b31a2e23a4b 100644
+--- a/components/bt/controller/esp32h2/bt.c
++++ b/components/bt/controller/esp32h2/bt.c
+@@ -1020,7 +1020,7 @@ int ble_sm_alg_gen_dhkey(const uint8_t *peer_pub_key_x, const uint8_t *peer_pub_
+         goto exit;
+     }
+ 
+-    if (mbedtls_ecp_check_pubkey(&keypair.MBEDTLS_PRIVATE(grp), &pt) != 0) {
++    if (esp_mbedtls_ecp_check_pubkey(&keypair.MBEDTLS_PRIVATE(grp), &pt) != 0) {
+         goto exit;
+     }
+ 
+diff --git a/components/bt/esp_ble_mesh/mesh_core/nimble_host/mesh_bearer_adapt.c b/components/bt/esp_ble_mesh/mesh_core/nimble_host/mesh_bearer_adapt.c
+index 96dedbeb5dc61b023de4a05eb30fb66740939022..57bfa9d61c5914a625145304c5b3870339404330 100644
+--- a/components/bt/esp_ble_mesh/mesh_core/nimble_host/mesh_bearer_adapt.c
++++ b/components/bt/esp_ble_mesh/mesh_core/nimble_host/mesh_bearer_adapt.c
+@@ -1822,7 +1822,7 @@ bool bt_mesh_check_public_key(const uint8_t key[64])
+         goto exit;
+     }
+ 
+-    if (mbedtls_ecp_check_pubkey(&grp, &pt) != 0) {
++    if (esp_mbedtls_ecp_check_pubkey(&grp, &pt) != 0) {
+         goto exit;
+     }
+ 
+diff --git a/components/mbedtls/port/ecc/ecc_alt.c b/components/mbedtls/port/ecc/ecc_alt.c
+index eb5bcd8f3de0748392148554c0864160321352b1..08c48faaf1eede76c174c482d13b467ee6936efb 100644
+--- a/components/mbedtls/port/ecc/ecc_alt.c
++++ b/components/mbedtls/port/ecc/ecc_alt.c
+@@ -76,7 +76,7 @@ cleanup:
+ 
+ #if defined(MBEDTLS_ECP_VERIFY_ALT) || defined(MBEDTLS_ECP_VERIFY_ALT_SOFT_FALLBACK)
+ 
+-int mbedtls_ecp_check_pubkey( const mbedtls_ecp_group *grp,
++int esp_mbedtls_ecp_check_pubkey( const mbedtls_ecp_group *grp,
+                               const mbedtls_ecp_point *pt )
+ {
+     int res;
+diff --git a/components/mbedtls/test/test_ecp.c b/components/mbedtls/test/test_ecp.c
+index 44a58e92cdbb569e475b2f9e774cc2502e326905..743b38a59a409e8f0261411d67bc6940022aa26b 100644
+--- a/components/mbedtls/test/test_ecp.c
++++ b/components/mbedtls/test/test_ecp.c
+@@ -236,7 +236,7 @@ static void test_ecp_verify(mbedtls_ecp_group_id id, const uint8_t *x_coord, con
+     mbedtls_mpi_read_binary(&P.Y, y_coord, size);
+     mbedtls_mpi_lset(&P.Z, 1);
+ 
+-    ret = mbedtls_ecp_check_pubkey(&grp, &P);
++    ret = esp_mbedtls_ecp_check_pubkey(&grp, &P);
+ 
+     TEST_ASSERT_EQUAL(0, ret);
+ 
+diff --git a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c
+index abf322f6b64cb30511143eacb4364db0b98e8b9f..41f7c0227ba74a2047a58380157286b6fc1e2c5d 100644
+--- a/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c
++++ b/components/wpa_supplicant/esp_supplicant/src/crypto/crypto_mbedtls-ec.c
+@@ -536,7 +536,7 @@ struct crypto_key * crypto_ec_set_pubkey_point(const struct crypto_ec_group *gro
+ 		goto fail;
+ 	}
+ 
+-	if (mbedtls_ecp_check_pubkey((mbedtls_ecp_group *)group, point) < 0) { //typecast
++	if (esp_mbedtls_ecp_check_pubkey((mbedtls_ecp_group *)group, point) < 0) { //typecast
+ 		// ideally should have failed in upper condition, duplicate code??
+ 		wpa_printf(MSG_ERROR, "Invalid key");
+ 		goto fail;
+diff --git a/tools/test_idf_size/overflow.map b/tools/test_idf_size/overflow.map
+index 81c7294ef28b9b988f24e1f067a1e8107fee9f48..dfa87fdb7980b9e3cd88d3d3c385d3431b6adc90 100644
+--- a/tools/test_idf_size/overflow.map
++++ b/tools/test_idf_size/overflow.map
+@@ -52054,7 +52054,7 @@ LOAD /home/xy/.espressif/tools/xtensa-esp32-elf/esp-2021r1-8.4.0/xtensa-esp32-el
+  .literal.mbedtls_ecp_point_cmp
+                 0x000000004010dbd0        0x0 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x10 (size before relaxing)
+- .literal.mbedtls_ecp_check_pubkey
++ .literal.esp_mbedtls_ecp_check_pubkey
+                 0x000000004010dbd0        0x0 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x14 (size before relaxing)
+  .literal.mbedtls_ecp_check_privkey
+@@ -53459,10 +53459,10 @@ LOAD /home/xy/.espressif/tools/xtensa-esp32-elf/esp-2021r1-8.4.0/xtensa-esp32-el
+                                          0x42 (size before relaxing)
+                 0x0000000040116d50                mbedtls_ecp_point_cmp
+  *fill*         0x0000000040116d8a        0x2 
+- .text.mbedtls_ecp_check_pubkey
++ .text.esp_mbedtls_ecp_check_pubkey
+                 0x0000000040116d8c       0x4d esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x51 (size before relaxing)
+-                0x0000000040116d8c                mbedtls_ecp_check_pubkey
++                0x0000000040116d8c                esp_mbedtls_ecp_check_pubkey
+  *fill*         0x0000000040116dd9        0x3 
+  .text.mbedtls_ecp_check_privkey
+                 0x0000000040116ddc       0x88 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+@@ -71932,7 +71932,7 @@ mbedtls_ecp_check_privkey                         esp-idf/mbedtls/mbedtls/librar
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+ mbedtls_ecp_check_pub_priv                        esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pk_wrap.c.obj)
+-mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
++esp_mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+                                                   esp-idf/wpa_supplicant/libwpa_supplicant.a(crypto_mbedtls-ec.c.obj)
+ mbedtls_ecp_copy                                  esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+diff --git a/tools/test_idf_size/overflow_esp32c3.map b/tools/test_idf_size/overflow_esp32c3.map
+index 2a7ddb9c73e139b3213e1204f4a00e64be724d11..4b3fb335f4b03d764ab75ea33026140cb4940ed5 100644
+--- a/tools/test_idf_size/overflow_esp32c3.map
++++ b/tools/test_idf_size/overflow_esp32c3.map
+@@ -39081,9 +39081,9 @@ END GROUP
+  .text.mbedtls_ecp_point_cmp
+                 0x000000004203f8ea       0x50 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                 0x000000004203f8ea                mbedtls_ecp_point_cmp
+- .text.mbedtls_ecp_check_pubkey
++ .text.esp_mbedtls_ecp_check_pubkey
+                 0x000000004203f93a       0x5a esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+-                0x000000004203f93a                mbedtls_ecp_check_pubkey
++                0x000000004203f93a                esp_mbedtls_ecp_check_pubkey
+  .text.mbedtls_ecp_check_privkey
+                 0x000000004203f994       0xa4 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                 0x000000004203f994                mbedtls_ecp_check_privkey
+@@ -67988,7 +67988,7 @@ mbedtls_ecp_check_privkey                         esp-idf/mbedtls/mbedtls/librar
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+ mbedtls_ecp_check_pub_priv                        esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pk_wrap.c.obj)
+-mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
++esp_mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+                                                   esp-idf/wpa_supplicant/libwpa_supplicant.a(crypto_mbedtls-ec.c.obj)
+ mbedtls_ecp_copy                                  esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+diff --git a/tools/test_idf_size/overflow_esp32s2.map b/tools/test_idf_size/overflow_esp32s2.map
+index baac616698961fac898b3649cf03cd60af2ef031..1c71fe747214a9e5dea4c68059d61582b6df0527 100644
+--- a/tools/test_idf_size/overflow_esp32s2.map
++++ b/tools/test_idf_size/overflow_esp32s2.map
+@@ -53170,7 +53170,7 @@ LOAD /home/xy/.espressif/tools/xtensa-esp32s2-elf/esp-2021r1-8.4.0/xtensa-esp32s
+  .literal.mbedtls_ecp_point_cmp
+                 0x00000000400bde00        0x0 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x10 (size before relaxing)
+- .literal.mbedtls_ecp_check_pubkey
++ .literal.esp_mbedtls_ecp_check_pubkey
+                 0x00000000400bde00        0x0 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x14 (size before relaxing)
+  .literal.mbedtls_ecp_check_privkey
+@@ -54549,10 +54549,10 @@ LOAD /home/xy/.espressif/tools/xtensa-esp32s2-elf/esp-2021r1-8.4.0/xtensa-esp32s
+                                          0x42 (size before relaxing)
+                 0x00000000400c52f0                mbedtls_ecp_point_cmp
+  *fill*         0x00000000400c532a        0x2 
+- .text.mbedtls_ecp_check_pubkey
++ .text.esp_mbedtls_ecp_check_pubkey
+                 0x00000000400c532c       0x4d esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x51 (size before relaxing)
+-                0x00000000400c532c                mbedtls_ecp_check_pubkey
++                0x00000000400c532c                esp_mbedtls_ecp_check_pubkey
+  *fill*         0x00000000400c5379        0x3 
+  .text.mbedtls_ecp_check_privkey
+                 0x00000000400c537c       0x88 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+@@ -73096,7 +73096,7 @@ mbedtls_ecp_check_privkey                         esp-idf/mbedtls/mbedtls/librar
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+ mbedtls_ecp_check_pub_priv                        esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pk_wrap.c.obj)
+-mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
++esp_mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+                                                   esp-idf/wpa_supplicant/libwpa_supplicant.a(crypto_mbedtls-ec.c.obj)
+ mbedtls_ecp_copy                                  esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+diff --git a/tools/test_idf_size/overflow_esp32s3.map b/tools/test_idf_size/overflow_esp32s3.map
+index 22cde1b94c7242a51ce71e5b3efe9c7782b210fe..5054b475e4b14baa0472825e133f77ba4f7d2da7 100644
+--- a/tools/test_idf_size/overflow_esp32s3.map
++++ b/tools/test_idf_size/overflow_esp32s3.map
+@@ -62512,7 +62512,7 @@ LOAD c:/users/simon/.espressif/tools/xtensa-esp32s3-elf/esp-2021r1-8.4.0/xtensa-
+  .literal.mbedtls_ecp_point_cmp
+                 0x000000004203e894        0x4 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x10 (size before relaxing)
+- .literal.mbedtls_ecp_check_pubkey
++ .literal.esp_mbedtls_ecp_check_pubkey
+                 0x000000004203e898        0x4 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x14 (size before relaxing)
+  .literal.mbedtls_ecp_check_privkey
+@@ -62877,10 +62877,10 @@ LOAD c:/users/simon/.espressif/tools/xtensa-esp32s3-elf/esp-2021r1-8.4.0/xtensa-
+                                          0x42 (size before relaxing)
+                 0x000000004203f048                mbedtls_ecp_point_cmp
+  *fill*         0x000000004203f082        0x2 
+- .text.mbedtls_ecp_check_pubkey
++ .text.esp_mbedtls_ecp_check_pubkey
+                 0x000000004203f084       0x4d esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                          0x51 (size before relaxing)
+-                0x000000004203f084                mbedtls_ecp_check_pubkey
++                0x000000004203f084                esp_mbedtls_ecp_check_pubkey
+  *fill*         0x000000004203f0d1        0x3 
+  .text.mbedtls_ecp_check_privkey
+                 0x000000004203f0d4       0x88 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+@@ -88710,7 +88710,7 @@ mbedtls_ecp_check_privkey                         esp-idf/mbedtls/mbedtls/librar
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+ mbedtls_ecp_check_pub_priv                        esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pk_wrap.c.obj)
+-mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
++esp_mbedtls_ecp_check_pubkey                          esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)
+                                                   esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(pkparse.c.obj)
+                                                   esp-idf/wpa_supplicant/libwpa_supplicant.a(crypto_mbedtls-ec.c.obj)
+ mbedtls_ecp_copy                                  esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(ecp.c.obj)

@@ -1,0 +1,2853 @@
+diff --git a/components/mbedtls/port/aes/block/esp_aes.c b/components/mbedtls/port/aes/block/esp_aes.c
+index aa349c31633b24627d562c49d5c3cf0979c9dfea..d9e7808031e4145a6e6270f97506cea3e0882b21 100644
+--- a/components/mbedtls/port/aes/block/esp_aes.c
++++ b/components/mbedtls/port/aes/block/esp_aes.c
+@@ -80,7 +80,7 @@ static int esp_aes_block(esp_aes_context *ctx, const void *input, void *output)
+     uint32_t *output_words = (uint32_t *)output;
+ 
+     /* If no key is written to hardware yet, either the user hasn't called
+-       mbedtls_aes_setkey_enc/mbedtls_aes_setkey_dec - meaning we also don't
++       esp_mbedtls_aes_setkey_enc/esp_mbedtls_aes_setkey_dec - meaning we also don't
+        know which mode to use - or a fault skipped the
+        key write to hardware. Treat this as a fatal error and zero the output block.
+     */
+@@ -106,7 +106,7 @@ static int esp_aes_block(esp_aes_context *ctx, const void *input, void *output)
+         // calling zeroing functions to narrow the
+         // window for a double-fault of the abort step, here
+         memset(output, 0, 16);
+-        mbedtls_platform_zeroize(output, 16);
++        esp_mbedtls_platform_zeroize(output, 16);
+         abort();
+     }
+ 
+diff --git a/components/mbedtls/port/aes/dma/esp_aes.c b/components/mbedtls/port/aes/dma/esp_aes.c
+index 4b952dbff3fe9c1c11ffebf15b78c1670ca6ea95..20ea8dc2c55ff30f1c45962072c44c136d1bc159 100644
+--- a/components/mbedtls/port/aes/dma/esp_aes.c
++++ b/components/mbedtls/port/aes/dma/esp_aes.c
+@@ -330,7 +330,7 @@ static int esp_aes_process_dma(esp_aes_context *ctx, const unsigned char *input,
+     assert(stream_bytes == 0 || stream_out != NULL); // stream_out can be NULL if we're processing full block(s)
+ 
+     /* If no key is written to hardware yet, either the user hasn't called
+-       mbedtls_aes_setkey_enc/mbedtls_aes_setkey_dec - meaning we also don't
++       esp_mbedtls_aes_setkey_enc/esp_mbedtls_aes_setkey_dec - meaning we also don't
+        know which mode to use - or a fault skipped the
+        key write to hardware. Treat this as a fatal error and zero the output block.
+     */
+@@ -479,7 +479,7 @@ int esp_aes_process_dma_gcm(esp_aes_context *ctx, const unsigned char *input, un
+     int ret = 0;
+ 
+     /* If no key is written to hardware yet, either the user hasn't called
+-       mbedtls_aes_setkey_enc/mbedtls_aes_setkey_dec - meaning we also don't
++       esp_mbedtls_aes_setkey_enc/esp_mbedtls_aes_setkey_dec - meaning we also don't
+        know which mode to use - or a fault skipped the
+        key write to hardware. Treat this as a fatal error and zero the output block.
+     */
+diff --git a/components/mbedtls/port/aes/esp_aes_gcm.c b/components/mbedtls/port/aes/esp_aes_gcm.c
+index 652a72ffca6327b2e973fa42c84b4ef5542ac545..c2d7b885cb3c48bb881b1771f5156cdfd7cddc7e 100644
+--- a/components/mbedtls/port/aes/esp_aes_gcm.c
++++ b/components/mbedtls/port/aes/esp_aes_gcm.c
+@@ -134,7 +134,7 @@ static void xor_data(uint8_t *d, const uint8_t *s)
+  * is the high-order bit of HH corresponds to P^0 and the low-order bit of HL
+  * corresponds to P^127.
+  */
+-static int gcm_gen_table( esp_gcm_context *ctx )
++static int esp_gcm_gen_table( esp_gcm_context *ctx )
+ {
+     int i, j;
+     uint64_t hi, lo;
+@@ -183,10 +183,10 @@ static int gcm_gen_table( esp_gcm_context *ctx )
+ }
+ /*
+  * Shoup's method for multiplication use this table with
+- *      last4[x] = x times P^128
+- * where x and last4[x] are seen as elements of GF(2^128) as in [MGV]
++ *      esp_last4[x] = x times P^128
++ * where x and esp_last4[x] are seen as elements of GF(2^128) as in [MGV]
+  */
+-static const uint64_t last4[16] = {
++static const uint64_t esp_last4[16] = {
+     0x0000, 0x1c20, 0x3840, 0x2460,
+     0x7080, 0x6ca0, 0x48c0, 0x54e0,
+     0xe100, 0xfd20, 0xd940, 0xc560,
+@@ -197,7 +197,7 @@ static const uint64_t last4[16] = {
+  * Sets output to x times H using the precomputed tables.
+  * x and output are seen as elements of GF(2^128) as in [MGV].
+  */
+-static void gcm_mult( esp_gcm_context *ctx, const unsigned char x[16],
++static void esp_gcm_mult( esp_gcm_context *ctx, const unsigned char x[16],
+                       unsigned char output[16] )
+ {
+     int i = 0;
+@@ -217,7 +217,7 @@ static void gcm_mult( esp_gcm_context *ctx, const unsigned char x[16],
+             rem = (unsigned char) zl & 0xf;
+             zl = ( zh << 60 ) | ( zl >> 4 );
+             zh = ( zh >> 4 );
+-            zh ^= (uint64_t) last4[rem] << 48;
++            zh ^= (uint64_t) esp_last4[rem] << 48;
+             zh ^= ctx->HH[lo];
+             zl ^= ctx->HL[lo];
+ 
+@@ -226,7 +226,7 @@ static void gcm_mult( esp_gcm_context *ctx, const unsigned char x[16],
+         rem = (unsigned char) zl & 0xf;
+         zl = ( zh << 60 ) | ( zl >> 4 );
+         zh = ( zh >> 4 );
+-        zh ^= (uint64_t) last4[rem] << 48;
++        zh ^= (uint64_t) esp_last4[rem] << 48;
+         zh ^= ctx->HH[hi];
+         zl ^= ctx->HL[hi];
+     }
+@@ -282,7 +282,7 @@ static void esp_gcm_ghash(esp_gcm_context *ctx, const unsigned char *x, size_t x
+     while (x_len >= AES_BLOCK_BYTES) {
+ 
+         xor_data(z, x);
+-        gcm_mult(ctx, z, z);
++        esp_gcm_mult(ctx, z, z);
+ 
+         x += AES_BLOCK_BYTES;
+         x_len -= AES_BLOCK_BYTES;
+@@ -294,7 +294,7 @@ static void esp_gcm_ghash(esp_gcm_context *ctx, const unsigned char *x, size_t x
+     if (x_len) {
+         memcpy(tmp, x, x_len);
+         xor_data(z, tmp);
+-        gcm_mult(ctx, z, z);
++        esp_gcm_mult(ctx, z, z);
+     }
+ }
+ 
+@@ -362,7 +362,7 @@ int esp_aes_gcm_starts( esp_gcm_context *ctx,
+ 
+         esp_aes_release_hardware();
+ 
+-        gcm_gen_table(ctx);
++        esp_gcm_gen_table(ctx);
+     }
+ 
+     ctx->gcm_state = ESP_AES_GCM_STATE_START;
+@@ -661,7 +661,7 @@ int esp_aes_gcm_crypt_and_tag( esp_gcm_context *ctx,
+     aes_hal_gcm_init( (aad_len + AES_BLOCK_BYTES - 1) / AES_BLOCK_BYTES, remainder_bit);
+     aes_hal_gcm_calc_hash(ctx->H);
+ 
+-    gcm_gen_table(ctx);
++    esp_gcm_gen_table(ctx);
+     esp_gcm_derive_J0(ctx);
+ 
+     aes_hal_gcm_set_j0(ctx->J0);
+diff --git a/components/mbedtls/port/dynamic/esp_mbedtls_dynamic_impl.c b/components/mbedtls/port/dynamic/esp_mbedtls_dynamic_impl.c
+index a44723d33c29a29610d66d193a993ef079d5787f..c8d1d86e0b44366dea1b8378457d06fa683c7bfb 100644
+--- a/components/mbedtls/port/dynamic/esp_mbedtls_dynamic_impl.c
++++ b/components/mbedtls/port/dynamic/esp_mbedtls_dynamic_impl.c
+@@ -31,7 +31,7 @@ void esp_mbedtls_free_buf(unsigned char *buf)
+ {
+     struct esp_mbedtls_ssl_buf *temp = __containerof(buf, struct esp_mbedtls_ssl_buf, buf[0]);
+     ESP_LOGV(TAG, "free buffer @ %p", temp);
+-    mbedtls_free(temp);
++    esp_mbedtls_free(temp);
+ }
+ 
+ static void esp_mbedtls_init_ssl_buf(struct esp_mbedtls_ssl_buf *buf, unsigned int len)
+@@ -144,7 +144,7 @@ static int esp_mbedtls_alloc_tx_buf(mbedtls_ssl_context *ssl, int len)
+         ssl->MBEDTLS_PRIVATE(out_buf) = NULL;
+     }
+ 
+-    esp_buf = mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + len);
++    esp_buf = esp_mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + len);
+     if (!esp_buf) {
+         ESP_LOGE(TAG, "alloc(%d bytes) failed", SSL_BUF_HEAD_OFFSET_SIZE + len);
+         return MBEDTLS_ERR_SSL_ALLOC_FAILED;
+@@ -205,7 +205,7 @@ int esp_mbedtls_reset_add_rx_buffer(mbedtls_ssl_context *ssl)
+         ssl->MBEDTLS_PRIVATE(in_buf) = NULL;
+     }
+ 
+-    esp_buf = mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + MBEDTLS_SSL_IN_BUFFER_LEN);
++    esp_buf = esp_mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + MBEDTLS_SSL_IN_BUFFER_LEN);
+     if (!esp_buf) {
+         ESP_LOGE(TAG, "alloc(%d bytes) failed", SSL_BUF_HEAD_OFFSET_SIZE + MBEDTLS_SSL_IN_BUFFER_LEN);
+         return MBEDTLS_ERR_SSL_ALLOC_FAILED;
+@@ -256,7 +256,7 @@ int esp_mbedtls_add_tx_buffer(mbedtls_ssl_context *ssl, size_t buffer_len)
+ 
+     buffer_len = tx_buffer_len(ssl, buffer_len);
+ 
+-    esp_buf = mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + buffer_len);
++    esp_buf = esp_mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + buffer_len);
+     if (!esp_buf) {
+         ESP_LOGE(TAG, "alloc(%zu bytes) failed", SSL_BUF_HEAD_OFFSET_SIZE + buffer_len);
+         ret = MBEDTLS_ERR_SSL_ALLOC_FAILED;
+@@ -301,7 +301,7 @@ int esp_mbedtls_free_tx_buffer(mbedtls_ssl_context *ssl)
+     esp_mbedtls_free_buf(ssl->MBEDTLS_PRIVATE(out_buf));
+     init_tx_buffer(ssl, NULL);
+ 
+-    esp_buf = mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + TX_IDLE_BUFFER_SIZE);
++    esp_buf = esp_mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + TX_IDLE_BUFFER_SIZE);
+     if (!esp_buf) {
+         ESP_LOGE(TAG, "alloc(%d bytes) failed", SSL_BUF_HEAD_OFFSET_SIZE + TX_IDLE_BUFFER_SIZE);
+         return MBEDTLS_ERR_SSL_ALLOC_FAILED;
+@@ -342,13 +342,13 @@ int esp_mbedtls_add_rx_buffer(mbedtls_ssl_context *ssl)
+     ssl->MBEDTLS_PRIVATE(in_hdr) = msg_head;
+     ssl->MBEDTLS_PRIVATE(in_len) = msg_head + 3;
+ 
+-    if ((ret = mbedtls_ssl_fetch_input(ssl, mbedtls_ssl_in_hdr_len(ssl))) != 0) {
++    if ((ret = esp_mbedtls_ssl_fetch_input(ssl, mbedtls_ssl_in_hdr_len(ssl))) != 0) {
+         if (ret == MBEDTLS_ERR_SSL_TIMEOUT) {
+-            ESP_LOGD(TAG, "mbedtls_ssl_fetch_input reads data times out");
++            ESP_LOGD(TAG, "esp_mbedtls_ssl_fetch_input reads data times out");
+         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
+-            ESP_LOGD(TAG, "mbedtls_ssl_fetch_input wants to read more data");
++            ESP_LOGD(TAG, "esp_mbedtls_ssl_fetch_input wants to read more data");
+         } else {
+-            ESP_LOGE(TAG, "mbedtls_ssl_fetch_input error=%d", -ret);
++            ESP_LOGE(TAG, "esp_mbedtls_ssl_fetch_input error=%d", -ret);
+         }
+ 
+         goto exit;
+@@ -369,7 +369,7 @@ int esp_mbedtls_add_rx_buffer(mbedtls_ssl_context *ssl)
+         init_rx_buffer(ssl, NULL);
+     }
+ 
+-    esp_buf = mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + buffer_len);
++    esp_buf = esp_mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + buffer_len);
+     if (!esp_buf) {
+         ESP_LOGE(TAG, "alloc(%d bytes) failed", SSL_BUF_HEAD_OFFSET_SIZE + buffer_len);
+         ret = MBEDTLS_ERR_SSL_ALLOC_FAILED;
+@@ -419,7 +419,7 @@ int esp_mbedtls_free_rx_buffer(mbedtls_ssl_context *ssl)
+     if (!ssl->MBEDTLS_PRIVATE(in_msgtype)
+ #if defined(MBEDTLS_SSL_SRV_C)
+         /**
+-         * The ssl server read ClientHello manually without mbedtls_ssl_read_record(), so in_msgtype is not set and is zero.
++         * The ssl server read ClientHello manually without esp_mbedtls_ssl_read_record(), so in_msgtype is not set and is zero.
+          * ClientHello has been processed and rx buffer should be freed.
+          * After processing ClientHello, the ssl state has been changed to MBEDTLS_SSL_SERVER_HELLO.
+          */
+@@ -435,7 +435,7 @@ int esp_mbedtls_free_rx_buffer(mbedtls_ssl_context *ssl)
+     esp_mbedtls_free_buf(ssl->MBEDTLS_PRIVATE(in_buf));
+     init_rx_buffer(ssl, NULL);
+ 
+-    esp_buf = mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + 16);
++    esp_buf = esp_mbedtls_calloc(1, SSL_BUF_HEAD_OFFSET_SIZE + 16);
+     if (!esp_buf) {
+         ESP_LOGE(TAG, "alloc(%d bytes) failed", SSL_BUF_HEAD_OFFSET_SIZE + 16);
+         ret = MBEDTLS_ERR_SSL_ALLOC_FAILED;
+@@ -473,8 +473,8 @@ size_t esp_mbedtls_get_crt_size(mbedtls_x509_crt *cert, size_t *num)
+ void esp_mbedtls_free_dhm(mbedtls_ssl_context *ssl)
+ {
+ #ifdef CONFIG_MBEDTLS_DHM_C
+-    mbedtls_mpi_free((mbedtls_mpi *)&ssl->MBEDTLS_PRIVATE(conf)->MBEDTLS_PRIVATE(dhm_P));
+-    mbedtls_mpi_free((mbedtls_mpi *)&ssl->MBEDTLS_PRIVATE(conf)->MBEDTLS_PRIVATE(dhm_G));
++    esp_mbedtls_mpi_free((mbedtls_mpi *)&ssl->MBEDTLS_PRIVATE(conf)->MBEDTLS_PRIVATE(dhm_P));
++    esp_mbedtls_mpi_free((mbedtls_mpi *)&ssl->MBEDTLS_PRIVATE(conf)->MBEDTLS_PRIVATE(dhm_G));
+ #endif /* CONFIG_MBEDTLS_DHM_C */
+ }
+ 
+@@ -487,7 +487,7 @@ void esp_mbedtls_free_keycert(mbedtls_ssl_context *ssl)
+         next = keycert->next;
+ 
+         if (keycert) {
+-            mbedtls_free(keycert);
++            esp_mbedtls_free(keycert);
+         }
+ 
+         keycert = next;
+@@ -502,7 +502,7 @@ void esp_mbedtls_free_keycert_key(mbedtls_ssl_context *ssl)
+ 
+     while (keycert) {
+         if (keycert->key) {
+-            mbedtls_pk_free(keycert->key);
++            esp_mbedtls_pk_free(keycert->key);
+             keycert->key = NULL;
+         }
+         keycert = keycert->next;
+@@ -515,7 +515,7 @@ void esp_mbedtls_free_keycert_cert(mbedtls_ssl_context *ssl)
+ 
+     while (keycert) {
+         if (keycert->cert) {
+-            mbedtls_x509_crt_free(keycert->cert);
++            esp_mbedtls_x509_crt_free(keycert->cert);
+             keycert->cert = NULL;
+         }
+         keycert = keycert->next;
+@@ -529,7 +529,7 @@ void esp_mbedtls_free_cacert(mbedtls_ssl_context *ssl)
+     if (ssl->MBEDTLS_PRIVATE(conf)->MBEDTLS_PRIVATE(ca_chain)) {
+         mbedtls_ssl_config *conf = (mbedtls_ssl_config *)ssl->MBEDTLS_PRIVATE(conf);
+ 
+-        mbedtls_x509_crt_free(conf->MBEDTLS_PRIVATE(ca_chain));
++        esp_mbedtls_x509_crt_free(conf->MBEDTLS_PRIVATE(ca_chain));
+         conf->MBEDTLS_PRIVATE(ca_chain) = NULL;
+     }
+ }
+diff --git a/components/mbedtls/port/dynamic/esp_ssl_cli.c b/components/mbedtls/port/dynamic/esp_ssl_cli.c
+index a38bb002f3e0ce3f339ef624aae51db561f66cca..fb19f695b73e034d2f69e0c0f9844437398ea15a 100644
+--- a/components/mbedtls/port/dynamic/esp_ssl_cli.c
++++ b/components/mbedtls/port/dynamic/esp_ssl_cli.c
+@@ -29,7 +29,7 @@ static int manage_resource(mbedtls_ssl_context *ssl, bool add)
+         }
+     }
+ 
+-    /* Change state now, so that it is right in mbedtls_ssl_read_record(), used
++    /* Change state now, so that it is right in esp_mbedtls_ssl_read_record(), used
+      * by DTLS for dropping out-of-sequence ChangeCipherSpec records */
+ #if defined(MBEDTLS_SSL_SESSION_TICKETS)
+     if( ssl->state == MBEDTLS_SSL_SERVER_CHANGE_CIPHER_SPEC &&
+diff --git a/components/mbedtls/port/dynamic/esp_ssl_tls.c b/components/mbedtls/port/dynamic/esp_ssl_tls.c
+index 21f8ca95e122fcca7714e3fb0510f992d84e088d..13c5a8786e9851cae20c67f0a4aeba63936a9eca 100644
+--- a/components/mbedtls/port/dynamic/esp_ssl_tls.c
++++ b/components/mbedtls/port/dynamic/esp_ssl_tls.c
+@@ -42,40 +42,40 @@ static int rx_done(mbedtls_ssl_context *ssl)
+     return 0;
+ }
+ 
+-static void ssl_update_checksum_start( mbedtls_ssl_context *ssl,
++static void esp_ssl_update_checksum_start( mbedtls_ssl_context *ssl,
+                                        const unsigned char *buf, size_t len )
+ {
+ #if defined(MBEDTLS_SHA256_C)
+-    mbedtls_sha256_update( &ssl->handshake->fin_sha256, buf, len );
++    esp_mbedtls_sha256_update( &ssl->handshake->fin_sha256, buf, len );
+ #endif
+ #if defined(MBEDTLS_SHA512_C)
+-    mbedtls_sha512_update( &ssl->handshake->fin_sha512, buf, len );
++    esp_mbedtls_sha512_update( &ssl->handshake->fin_sha512, buf, len );
+ #endif
+ }
+ 
+-static void ssl_handshake_params_init( mbedtls_ssl_handshake_params *handshake )
++static void esp_ssl_handshake_params_init( mbedtls_ssl_handshake_params *handshake )
+ {
+     memset( handshake, 0, sizeof( mbedtls_ssl_handshake_params ) );
+ 
+ #if defined(MBEDTLS_SHA256_C)
+-    mbedtls_sha256_init(   &handshake->fin_sha256    );
+-    mbedtls_sha256_starts( &handshake->fin_sha256, 0 );
++    esp_mbedtls_sha256_init(   &handshake->fin_sha256    );
++    esp_mbedtls_sha256_starts( &handshake->fin_sha256, 0 );
+ #endif
+ #if defined(MBEDTLS_SHA512_C)
+-    mbedtls_sha512_init(   &handshake->fin_sha512    );
+-    mbedtls_sha512_starts( &handshake->fin_sha512, 1 );
++    esp_mbedtls_sha512_init(   &handshake->fin_sha512    );
++    esp_mbedtls_sha512_starts( &handshake->fin_sha512, 1 );
+ #endif
+ 
+-    handshake->update_checksum = ssl_update_checksum_start;
++    handshake->update_checksum = esp_ssl_update_checksum_start;
+ 
+ #if defined(MBEDTLS_DHM_C)
+-    mbedtls_dhm_init( &handshake->dhm_ctx );
++    esp_mbedtls_dhm_init( &handshake->dhm_ctx );
+ #endif
+ #if defined(MBEDTLS_ECDH_C)
+-    mbedtls_ecdh_init( &handshake->ecdh_ctx );
++    esp_mbedtls_ecdh_init( &handshake->ecdh_ctx );
+ #endif
+ #if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
+-    mbedtls_ecjpake_init( &handshake->ecjpake_ctx );
++    esp_mbedtls_ecjpake_init( &handshake->ecjpake_ctx );
+ #if defined(MBEDTLS_SSL_CLI_C)
+     handshake->ecjpake_cache = NULL;
+     handshake->ecjpake_cache_len = 0;
+@@ -83,7 +83,7 @@ static void ssl_handshake_params_init( mbedtls_ssl_handshake_params *handshake )
+ #endif
+ 
+ #if defined(MBEDTLS_SSL_ECP_RESTARTABLE)
+-    mbedtls_x509_crt_restart_init( &handshake->ecrs_ctx );
++    esp_mbedtls_x509_crt_restart_init( &handshake->ecrs_ctx );
+ #endif
+ 
+ #if defined(MBEDTLS_SSL_SERVER_NAME_INDICATION)
+@@ -92,19 +92,19 @@ static void ssl_handshake_params_init( mbedtls_ssl_handshake_params *handshake )
+ 
+ #if defined(MBEDTLS_X509_CRT_PARSE_C) && \
+     !defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE)
+-    mbedtls_pk_init( &handshake->peer_pubkey );
++    esp_mbedtls_pk_init( &handshake->peer_pubkey );
+ #endif
+ }
+ 
+-static int ssl_handshake_init( mbedtls_ssl_context *ssl )
++static int esp_ssl_handshake_init( mbedtls_ssl_context *ssl )
+ {
+     /* Clear old handshake information if present */
+     if( ssl->transform_negotiate )
+-        mbedtls_ssl_transform_free( ssl->transform_negotiate );
++        esp_mbedtls_ssl_transform_free( ssl->transform_negotiate );
+     if( ssl->session_negotiate )
+-        mbedtls_ssl_session_free( ssl->session_negotiate );
++        esp_mbedtls_ssl_session_free( ssl->session_negotiate );
+     if( ssl->handshake )
+-        mbedtls_ssl_handshake_free( ssl );
++        esp_mbedtls_ssl_handshake_free( ssl );
+ 
+     /*
+      * Either the pointers are now NULL or cleared properly and can be freed.
+@@ -112,22 +112,22 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+      */
+     if( ssl->transform_negotiate == NULL )
+     {
+-        ssl->transform_negotiate = mbedtls_calloc( 1, sizeof(mbedtls_ssl_transform) );
++        ssl->transform_negotiate = esp_mbedtls_calloc( 1, sizeof(mbedtls_ssl_transform) );
+     }
+ 
+     if( ssl->session_negotiate == NULL )
+     {
+-        ssl->session_negotiate = mbedtls_calloc( 1, sizeof(mbedtls_ssl_session) );
++        ssl->session_negotiate = esp_mbedtls_calloc( 1, sizeof(mbedtls_ssl_session) );
+     }
+ 
+     if( ssl->handshake == NULL )
+     {
+-        ssl->handshake = mbedtls_calloc( 1, sizeof(mbedtls_ssl_handshake_params) );
++        ssl->handshake = esp_mbedtls_calloc( 1, sizeof(mbedtls_ssl_handshake_params) );
+     }
+ #if defined(MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH)
+     /* If the buffers are too small - reallocate */
+ 
+-    handle_buffer_resizing( ssl, 0, MBEDTLS_SSL_IN_BUFFER_LEN,
++    esp_handle_buffer_resizing( ssl, 0, MBEDTLS_SSL_IN_BUFFER_LEN,
+                                     MBEDTLS_SSL_OUT_BUFFER_LEN );
+ #endif
+ 
+@@ -138,9 +138,9 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+     {
+         ESP_LOGD(TAG, "alloc() of ssl sub-contexts failed");
+ 
+-        mbedtls_free( ssl->handshake );
+-        mbedtls_free( ssl->transform_negotiate );
+-        mbedtls_free( ssl->session_negotiate );
++        esp_mbedtls_free( ssl->handshake );
++        esp_mbedtls_free( ssl->transform_negotiate );
++        esp_mbedtls_free( ssl->session_negotiate );
+ 
+         ssl->handshake = NULL;
+         ssl->transform_negotiate = NULL;
+@@ -150,13 +150,13 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+     }
+ 
+     /* Initialize structures */
+-    mbedtls_ssl_session_init( ssl->session_negotiate );
+-    mbedtls_ssl_transform_init( ssl->transform_negotiate );
+-    ssl_handshake_params_init( ssl->handshake );
++    esp_mbedtls_ssl_session_init( ssl->session_negotiate );
++    esp_mbedtls_ssl_transform_init( ssl->transform_negotiate );
++    esp_ssl_handshake_params_init( ssl->handshake );
+ 
+ /*
+  * curve_list is translated to IANA TLS group identifiers here because
+- * mbedtls_ssl_conf_curves returns void and so can't return
++ * esp_mbedtls_ssl_conf_curves returns void and so can't return
+  * any error codes.
+  */
+ #if defined(MBEDTLS_ECP_C)
+@@ -171,17 +171,17 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+                           ( length < MBEDTLS_ECP_DP_MAX ); length++ ) {}
+ 
+         /* Leave room for zero termination */
+-        uint16_t *group_list = mbedtls_calloc( length + 1, sizeof(uint16_t) );
++        uint16_t *group_list = esp_mbedtls_calloc( length + 1, sizeof(uint16_t) );
+         if ( group_list == NULL )
+             return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
+ 
+         for( size_t i = 0; i < length; i++ )
+         {
+             const mbedtls_ecp_curve_info *info =
+-                        mbedtls_ecp_curve_info_from_grp_id( curve_list[i] );
++                        esp_mbedtls_ecp_curve_info_from_grp_id( curve_list[i] );
+             if ( info == NULL )
+             {
+-                mbedtls_free( group_list );
++                esp_mbedtls_free( group_list );
+                 return( MBEDTLS_ERR_SSL_BAD_CONFIG );
+             }
+             group_list[i] = info->tls_id;
+@@ -221,7 +221,7 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+ 
+         for( md = sig_hashes; *md != MBEDTLS_MD_NONE; md++ )
+         {
+-            if( mbedtls_ssl_hash_from_md_alg( *md ) == MBEDTLS_SSL_HASH_NONE )
++            if( esp_mbedtls_ssl_hash_from_md_alg( *md ) == MBEDTLS_SSL_HASH_NONE )
+                 continue;
+ #if defined(MBEDTLS_ECDSA_C)
+             sig_algs_len += sizeof( uint16_t );
+@@ -237,7 +237,7 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+         if( sig_algs_len < MBEDTLS_SSL_MIN_SIG_ALG_LIST_LEN )
+             return( MBEDTLS_ERR_SSL_BAD_CONFIG );
+ 
+-        ssl->handshake->sig_algs = mbedtls_calloc( 1, sig_algs_len +
++        ssl->handshake->sig_algs = esp_mbedtls_calloc( 1, sig_algs_len +
+                                                       sizeof( uint16_t ));
+         if( ssl->handshake->sig_algs == NULL )
+             return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
+@@ -245,7 +245,7 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+         p = (uint16_t *)ssl->handshake->sig_algs;
+         for( md = sig_hashes; *md != MBEDTLS_MD_NONE; md++ )
+         {
+-            unsigned char hash = mbedtls_ssl_hash_from_md_alg( *md );
++            unsigned char hash = esp_mbedtls_ssl_hash_from_md_alg( *md );
+             if( hash == MBEDTLS_SSL_HASH_NONE )
+                 continue;
+ #if defined(MBEDTLS_ECDSA_C)
+@@ -274,13 +274,13 @@ static int ssl_handshake_init( mbedtls_ssl_context *ssl )
+ int __wrap_mbedtls_ssl_setup(mbedtls_ssl_context *ssl, const mbedtls_ssl_config *conf)
+ {
+     ssl->conf = conf;
+-    CHECK_OK(ssl_handshake_init(ssl));
++    CHECK_OK(esp_ssl_handshake_init(ssl));
+ 
+-    mbedtls_free(ssl->MBEDTLS_PRIVATE(out_buf));
++    esp_mbedtls_free(ssl->MBEDTLS_PRIVATE(out_buf));
+     ssl->MBEDTLS_PRIVATE(out_buf) = NULL;
+     CHECK_OK(esp_mbedtls_setup_tx_buffer(ssl));
+ 
+-    mbedtls_free(ssl->MBEDTLS_PRIVATE(in_buf));
++    esp_mbedtls_free(ssl->MBEDTLS_PRIVATE(in_buf));
+     ssl->MBEDTLS_PRIVATE(in_buf) = NULL;
+     esp_mbedtls_setup_rx_buffer(ssl);
+ 
+diff --git a/components/mbedtls/port/ecc/ecc_alt.c b/components/mbedtls/port/ecc/ecc_alt.c
+index 7b84d0818f8dbbb5ebd045f47e87c782e7fb5864..eb5bcd8f3de0748392148554c0864160321352b1 100644
+--- a/components/mbedtls/port/ecc/ecc_alt.c
++++ b/components/mbedtls/port/ecc/ecc_alt.c
+@@ -37,8 +37,8 @@ static int esp_mbedtls_ecp_point_multiply(const mbedtls_ecp_group *grp, mbedtls_
+ 
+     p_pt.len = grp->pbits / 8;
+ 
+-    memcpy(&p_pt.x, P->X.p, mbedtls_mpi_size(&P->X));
+-    memcpy(&p_pt.y, P->Y.p, mbedtls_mpi_size(&P->Y));
++    memcpy(&p_pt.x, P->X.p, esp_mbedtls_mpi_size(&P->X));
++    memcpy(&p_pt.y, P->Y.p, esp_mbedtls_mpi_size(&P->Y));
+ 
+     ret = esp_ecc_point_multiply(&p_pt, (uint8_t *)m->p, &r_pt, false);
+ 
+@@ -47,9 +47,9 @@ static int esp_mbedtls_ecp_point_multiply(const mbedtls_ecp_group *grp, mbedtls_
+         y_tmp[MAX_SIZE - i - 1] = r_pt.y[i];
+     }
+ 
+-    mbedtls_mpi_read_binary(&R->X, x_tmp, MAX_SIZE);
+-    mbedtls_mpi_read_binary(&R->Y, y_tmp, MAX_SIZE);
+-    mbedtls_mpi_lset(&R->Z, 1);
++    esp_mbedtls_mpi_read_binary(&R->X, x_tmp, MAX_SIZE);
++    esp_mbedtls_mpi_read_binary(&R->Y, y_tmp, MAX_SIZE);
++    esp_mbedtls_mpi_lset(&R->Z, 1);
+     return ret;
+ }
+ 
+@@ -61,7 +61,7 @@ int ecp_mul_restartable_internal( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
+     int ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+     if (grp->id != MBEDTLS_ECP_DP_SECP192R1 && grp->id != MBEDTLS_ECP_DP_SECP256R1) {
+ #if defined(MBEDTLS_ECP_MUL_ALT_SOFT_FALLBACK)
+-        return ecp_mul_restartable_internal_soft(grp, R, m, P, f_rng, p_rng, rs_ctx);
++        return esp_ecp_mul_restartable_internal_soft(grp, R, m, P, f_rng, p_rng, rs_ctx);
+ #else
+         return ret;
+ #endif
+@@ -84,7 +84,7 @@ int mbedtls_ecp_check_pubkey( const mbedtls_ecp_group *grp,
+ 
+     if (grp->id != MBEDTLS_ECP_DP_SECP192R1 && grp->id != MBEDTLS_ECP_DP_SECP256R1) {
+ #if defined(MBEDTLS_ECP_VERIFY_ALT_SOFT_FALLBACK)
+-        return mbedtls_ecp_check_pubkey_soft(grp, pt);
++        return esp_mbedtls_ecp_check_pubkey_soft(grp, pt);
+ #else
+         return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+ #endif
+@@ -94,13 +94,13 @@ int mbedtls_ecp_check_pubkey( const mbedtls_ecp_group *grp,
+     ECP_VALIDATE_RET( pt  != NULL );
+ 
+     /* Must use affine coordinates */
+-    if( mbedtls_mpi_cmp_int( &pt->Z, 1 ) != 0 )
++    if( esp_mbedtls_mpi_cmp_int( &pt->Z, 1 ) != 0 )
+         return( MBEDTLS_ERR_ECP_INVALID_KEY );
+ 
+-    mbedtls_platform_zeroize((void *)&point, sizeof(ecc_point_t));
++    esp_mbedtls_platform_zeroize((void *)&point, sizeof(ecc_point_t));
+ 
+-    memcpy(&point.x, pt->X.p, mbedtls_mpi_size(&pt->X));
+-    memcpy(&point.y, pt->Y.p, mbedtls_mpi_size(&pt->Y));
++    memcpy(&point.x, pt->X.p, esp_mbedtls_mpi_size(&pt->X));
++    memcpy(&point.y, pt->Y.p, esp_mbedtls_mpi_size(&pt->Y));
+ 
+     point.len = grp->pbits / 8;
+ 
+diff --git a/components/mbedtls/port/esp32/bignum.c b/components/mbedtls/port/esp32/bignum.c
+index 2b55bc4c7df1ddc4a0bc0672b827f2bff7375759..8898ba5f49911a14ad0ad4d8afc031f4baf325d6 100644
+--- a/components/mbedtls/port/esp32/bignum.c
++++ b/components/mbedtls/port/esp32/bignum.c
+@@ -228,7 +228,7 @@ int esp_mont_hw_op(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, c
+ 
+     start_op(RSA_MULT_START_REG);
+     Z->MBEDTLS_PRIVATE(s) = 1; // The sign of Z will be = M->s (but M->s is always 1)
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_grow(Z, hw_words) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_grow(Z, hw_words) );
+ 
+     wait_op_complete();
+ 
+@@ -237,8 +237,8 @@ int esp_mont_hw_op(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, c
+ 
+ 
+     /* from HAC 14.36 - 3. If Z >= M then Z = Z - M */
+-    if (mbedtls_mpi_cmp_mpi(Z, M) >= 0) {
+-        MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(Z, Z, M));
++    if (esp_mbedtls_mpi_cmp_mpi(Z, M) >= 0) {
++        MBEDTLS_MPI_CHK(esp_mbedtls_mpi_sub_mpi(Z, Z, M));
+     }
+ cleanup:
+     return ret;
+diff --git a/components/mbedtls/port/esp32c3/bignum.c b/components/mbedtls/port/esp32c3/bignum.c
+index fc5380f4ea328e20c928ea6137766efd4b58da3d..3ac080a81840ff87364b8f6f409935724938e88f 100644
+--- a/components/mbedtls/port/esp32c3/bignum.c
++++ b/components/mbedtls/port/esp32c3/bignum.c
+@@ -158,7 +158,7 @@ void esp_mpi_mul_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const
+ */
+ void esp_mpi_exp_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, const mbedtls_mpi *Rinv, mbedtls_mpi_uint Mprime, size_t num_words)
+ {
+-    size_t y_bits = mbedtls_mpi_bitlen(Y);
++    size_t y_bits = esp_mbedtls_mpi_bitlen(Y);
+ 
+     REG_WRITE(RSA_LENGTH_REG, (num_words - 1));
+ 
+diff --git a/components/mbedtls/port/esp32h2/bignum.c b/components/mbedtls/port/esp32h2/bignum.c
+index 98401da855aa8563b508e6a9ddd6659fe5c5ee94..023344f5dd99a4f7e194b012ee53a4501cf87cf6 100644
+--- a/components/mbedtls/port/esp32h2/bignum.c
++++ b/components/mbedtls/port/esp32h2/bignum.c
+@@ -158,7 +158,7 @@ void esp_mpi_mul_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const
+ */
+ void esp_mpi_exp_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, const mbedtls_mpi *Rinv, mbedtls_mpi_uint Mprime, size_t num_words)
+ {
+-    size_t y_bits = mbedtls_mpi_bitlen(Y);
++    size_t y_bits = esp_mbedtls_mpi_bitlen(Y);
+ 
+     REG_WRITE(RSA_LENGTH_REG, (num_words - 1));
+ 
+diff --git a/components/mbedtls/port/esp32s2/bignum.c b/components/mbedtls/port/esp32s2/bignum.c
+index eeeeabc3b1eb6dce63adc34f200473a845cd0dec..ea2f65a1db38a97276f33ceede6a00d9d1ebe134 100644
+--- a/components/mbedtls/port/esp32s2/bignum.c
++++ b/components/mbedtls/port/esp32s2/bignum.c
+@@ -153,7 +153,7 @@ void esp_mpi_mul_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const
+ */
+ void esp_mpi_exp_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, const mbedtls_mpi *Rinv, mbedtls_mpi_uint Mprime, size_t num_words)
+ {
+-    size_t y_bits = mbedtls_mpi_bitlen(Y);
++    size_t y_bits = esp_mbedtls_mpi_bitlen(Y);
+ 
+     DPORT_REG_WRITE(RSA_LENGTH_REG, (num_words - 1));
+ 
+diff --git a/components/mbedtls/port/esp32s3/bignum.c b/components/mbedtls/port/esp32s3/bignum.c
+index fe33dea2f04e4b793a1002a382cb31050b281a2d..217e7acbf846f69a6c56099f969e5813b5cfff35 100644
+--- a/components/mbedtls/port/esp32s3/bignum.c
++++ b/components/mbedtls/port/esp32s3/bignum.c
+@@ -155,7 +155,7 @@ void esp_mpi_mul_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const
+ */
+ void esp_mpi_exp_mpi_mod_hw_op(const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, const mbedtls_mpi *Rinv, mbedtls_mpi_uint Mprime, size_t num_words)
+ {
+-    size_t y_bits = mbedtls_mpi_bitlen(Y);
++    size_t y_bits = esp_mbedtls_mpi_bitlen(Y);
+ 
+     DPORT_REG_WRITE(RSA_LENGTH_REG, (num_words - 1));
+ 
+diff --git a/components/mbedtls/port/esp_bignum.c b/components/mbedtls/port/esp_bignum.c
+index 0cc987cbfa39991585f6d62f8574d64067eccb11..a34551c19b9aa9ef27dc6ddbfd94f194ee93aaaf 100644
+--- a/components/mbedtls/port/esp_bignum.c
++++ b/components/mbedtls/port/esp_bignum.c
+@@ -184,7 +184,7 @@ static mbedtls_mpi_uint modular_inverse(const mbedtls_mpi *M)
+  *  R = 2^N (where N=num_bits)
+  *  RR = R^2 = 2^(2*N) (where N=num_bits=num_words*32)
+  *
+- * This calculation is computationally expensive (mbedtls_mpi_mod_mpi)
++ * This calculation is computationally expensive (esp_mbedtls_mpi_mod_mpi)
+  * so caller should cache the result where possible.
+  *
+  * DO NOT call this function while holding esp_mpi_enable_hardware_hw_op().
+@@ -195,12 +195,12 @@ static int calculate_rinv(mbedtls_mpi *Rinv, const mbedtls_mpi *M, int num_words
+     int ret;
+     size_t num_bits = num_words * 32;
+     mbedtls_mpi RR;
+-    mbedtls_mpi_init(&RR);
+-    MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(&RR, num_bits * 2, 1));
+-    MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(Rinv, &RR, M));
++    esp_mbedtls_mpi_init(&RR);
++    MBEDTLS_MPI_CHK(esp_mbedtls_mpi_set_bit(&RR, num_bits * 2, 1));
++    MBEDTLS_MPI_CHK(esp_mbedtls_mpi_mod_mpi(Rinv, &RR, M));
+ 
+ cleanup:
+-    mbedtls_mpi_free(&RR);
++    esp_mbedtls_mpi_free(&RR);
+ 
+     return ret;
+ }
+@@ -218,9 +218,9 @@ int esp_mpi_mul_mpi_mod(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi
+ {
+     int ret = 0;
+ 
+-    size_t x_bits = mbedtls_mpi_bitlen(X);
+-    size_t y_bits = mbedtls_mpi_bitlen(Y);
+-    size_t m_bits = mbedtls_mpi_bitlen(M);
++    size_t x_bits = esp_mbedtls_mpi_bitlen(X);
++    size_t y_bits = esp_mbedtls_mpi_bitlen(Y);
++    size_t m_bits = esp_mbedtls_mpi_bitlen(M);
+     size_t z_bits = MIN(m_bits, x_bits + y_bits);
+     size_t x_words = bits_to_words(x_bits);
+     size_t y_words = bits_to_words(y_bits);
+@@ -231,7 +231,7 @@ int esp_mpi_mul_mpi_mod(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi
+     mbedtls_mpi_uint Mprime;
+ 
+     /* Calculate and load the first stage montgomery multiplication */
+-    mbedtls_mpi_init(&Rinv);
++    esp_mbedtls_mpi_init(&Rinv);
+     MBEDTLS_MPI_CHK(calculate_rinv(&Rinv, M, hw_words));
+     Mprime = modular_inverse(M);
+ 
+@@ -239,13 +239,13 @@ int esp_mpi_mul_mpi_mod(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi
+     /* Load and start a (X * Y) mod M calculation */
+     esp_mpi_mul_mpi_mod_hw_op(X, Y, M, &Rinv, Mprime, hw_words);
+ 
+-    MBEDTLS_MPI_CHK(mbedtls_mpi_grow(Z, z_words));
++    MBEDTLS_MPI_CHK(esp_mbedtls_mpi_grow(Z, z_words));
+ 
+     esp_mpi_read_result_hw_op(Z, z_words);
+     Z->MBEDTLS_PRIVATE(s) = X->MBEDTLS_PRIVATE(s) * Y->MBEDTLS_PRIVATE(s);
+ 
+ cleanup:
+-    mbedtls_mpi_free(&Rinv);
++    esp_mbedtls_mpi_free(&Rinv);
+     esp_mpi_disable_hardware_hw_op();
+ 
+     return ret;
+@@ -285,10 +285,10 @@ static int mpi_montgomery_exp_calc( mbedtls_mpi *Z, const mbedtls_mpi *X, const
+     int ret = 0;
+     mbedtls_mpi X_, one;
+ 
+-    mbedtls_mpi_init(&X_);
+-    mbedtls_mpi_init(&one);
+-    if ( ( ( ret = mbedtls_mpi_grow(&one, hw_words) ) != 0 ) ||
+-            ( ( ret = mbedtls_mpi_set_bit(&one, 0, 1) )  != 0 ) ) {
++    esp_mbedtls_mpi_init(&X_);
++    esp_mbedtls_mpi_init(&one);
++    if ( ( ( ret = esp_mbedtls_mpi_grow(&one, hw_words) ) != 0 ) ||
++            ( ( ret = esp_mbedtls_mpi_set_bit(&one, 0, 1) )  != 0 ) ) {
+         goto cleanup2;
+     }
+ 
+@@ -315,7 +315,7 @@ static int mpi_montgomery_exp_calc( mbedtls_mpi *Z, const mbedtls_mpi *X, const
+             }
+ 
+             // 2.2 if y[i] = 1 then z = mont(A, x_)
+-            if (mbedtls_mpi_get_bit(Y, i)) {
++            if (esp_mbedtls_mpi_get_bit(Y, i)) {
+                 MBEDTLS_MPI_CHK( esp_mont_hw_op(Z, Z, &X_, M, Mprime, hw_words, true) );
+             }
+         }
+@@ -328,8 +328,8 @@ cleanup:
+     esp_mpi_disable_hardware_hw_op();
+ 
+ cleanup2:
+-    mbedtls_mpi_free(&X_);
+-    mbedtls_mpi_free(&one);
++    esp_mbedtls_mpi_free(&X_);
++    esp_mbedtls_mpi_free(&one);
+     return ret;
+ }
+ 
+@@ -364,22 +364,22 @@ static int esp_mpi_exp_mod( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_
+         return MBEDTLS_ERR_MPI_NOT_ACCEPTABLE;
+     }
+ 
+-    if (mbedtls_mpi_cmp_int(M, 0) <= 0 || (M->MBEDTLS_PRIVATE(p[0]) & 1) == 0) {
++    if (esp_mbedtls_mpi_cmp_int(M, 0) <= 0 || (M->MBEDTLS_PRIVATE(p[0]) & 1) == 0) {
+         return MBEDTLS_ERR_MPI_BAD_INPUT_DATA;
+     }
+ 
+-    if (mbedtls_mpi_cmp_int(Y, 0) < 0) {
++    if (esp_mbedtls_mpi_cmp_int(Y, 0) < 0) {
+         return MBEDTLS_ERR_MPI_BAD_INPUT_DATA;
+     }
+ 
+-    if (mbedtls_mpi_cmp_int(Y, 0) == 0) {
+-        return mbedtls_mpi_lset(Z, 1);
++    if (esp_mbedtls_mpi_cmp_int(Y, 0) == 0) {
++        return esp_mbedtls_mpi_lset(Z, 1);
+     }
+ 
+     /* Determine RR pointer, either _RR for cached value
+        or local RR_new */
+     if (_Rinv == NULL) {
+-        mbedtls_mpi_init(&Rinv_new);
++        esp_mbedtls_mpi_init(&Rinv_new);
+         Rinv = &Rinv_new;
+     } else {
+         Rinv = _Rinv;
+@@ -406,7 +406,7 @@ static int esp_mpi_exp_mod( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_
+ #endif
+ 
+     esp_mpi_exp_mpi_mod_hw_op(X, Y, M, Rinv, Mprime, num_words);
+-    ret = mbedtls_mpi_grow(Z, m_words);
++    ret = esp_mbedtls_mpi_grow(Z, m_words);
+     if (ret != 0) {
+         esp_mpi_disable_hardware_hw_op();
+         goto cleanup;
+@@ -427,14 +427,14 @@ static int esp_mpi_exp_mod( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_
+     // Compensate for negative X
+     if (X->MBEDTLS_PRIVATE(s) == -1 && (Y->MBEDTLS_PRIVATE(p[0]) & 1) != 0) {
+         Z->MBEDTLS_PRIVATE(s) = -1;
+-        MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(Z, M, Z));
++        MBEDTLS_MPI_CHK(esp_mbedtls_mpi_add_mpi(Z, M, Z));
+     } else {
+         Z->MBEDTLS_PRIVATE(s) = 1;
+     }
+ 
+ cleanup:
+     if (_Rinv == NULL) {
+-        mbedtls_mpi_free(&Rinv_new);
++        esp_mbedtls_mpi_free(&Rinv_new);
+     }
+     return ret;
+ }
+@@ -444,7 +444,7 @@ cleanup:
+ /*
+  * Sliding-window exponentiation: X = A^E mod N  (HAC 14.85)
+  */
+-int mbedtls_mpi_exp_mod( mbedtls_mpi *X, const mbedtls_mpi *A,
++int esp_mbedtls_mpi_exp_mod( mbedtls_mpi *X, const mbedtls_mpi *A,
+                          const mbedtls_mpi *E, const mbedtls_mpi *N,
+                          mbedtls_mpi *_RR )
+ {
+@@ -471,11 +471,11 @@ static int mpi_mult_mpi_failover_mod_mult( mbedtls_mpi *Z, const mbedtls_mpi *X,
+ static int mpi_mult_mpi_overlong(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, size_t y_words, size_t z_words);
+ 
+ /* Z = X * Y */
+-int mbedtls_mpi_mul_mpi( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y )
++int esp_mbedtls_mpi_mul_mpi( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y )
+ {
+     int ret = 0;
+-    size_t x_bits = mbedtls_mpi_bitlen(X);
+-    size_t y_bits = mbedtls_mpi_bitlen(Y);
++    size_t x_bits = esp_mbedtls_mpi_bitlen(X);
++    size_t y_bits = esp_mbedtls_mpi_bitlen(Y);
+     size_t x_words = bits_to_words(x_bits);
+     size_t y_words = bits_to_words(y_bits);
+     size_t z_words = bits_to_words(x_bits + y_bits);
+@@ -489,22 +489,22 @@ int mbedtls_mpi_mul_mpi( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi
+        argument is zero or one.
+     */
+     if (x_bits == 0 || y_bits == 0) {
+-        mbedtls_mpi_lset(Z, 0);
++        esp_mbedtls_mpi_lset(Z, 0);
+         return 0;
+     }
+     if (x_bits == 1) {
+-        ret = mbedtls_mpi_copy(Z, Y);
++        ret = esp_mbedtls_mpi_copy(Z, Y);
+         Z->MBEDTLS_PRIVATE(s) *= X->MBEDTLS_PRIVATE(s);
+         return ret;
+     }
+     if (y_bits == 1) {
+-        ret = mbedtls_mpi_copy(Z, X);
++        ret = esp_mbedtls_mpi_copy(Z, X);
+         Z->MBEDTLS_PRIVATE(s) *= Y->MBEDTLS_PRIVATE(s);
+         return ret;
+     }
+ 
+     /* Grow Z to result size early, avoid interim allocations */
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_grow(Z, z_words) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_grow(Z, z_words) );
+ 
+     /* If either factor is over 2048 bits, we can't use the standard hardware multiplier
+        (it assumes result is double longest factor, and result is max 4096 bits.)
+@@ -544,7 +544,7 @@ cleanup:
+     return ret;
+ }
+ 
+-int mbedtls_mpi_mul_int( mbedtls_mpi *X, const mbedtls_mpi *A, mbedtls_mpi_uint b )
++int esp_mbedtls_mpi_mul_int( mbedtls_mpi *X, const mbedtls_mpi *A, mbedtls_mpi_uint b )
+ {
+     mbedtls_mpi _B;
+     mbedtls_mpi_uint p[1];
+@@ -554,7 +554,7 @@ int mbedtls_mpi_mul_int( mbedtls_mpi *X, const mbedtls_mpi *A, mbedtls_mpi_uint
+     _B.MBEDTLS_PRIVATE(p) = p;
+     p[0] = b;
+ 
+-    return( mbedtls_mpi_mul_mpi( X, A, &_B ) );
++    return( esp_mbedtls_mpi_mul_mpi( X, A, &_B ) );
+ }
+ 
+ /* Deal with the case when X & Y are too long for the hardware unit, by splitting one operand
+@@ -592,22 +592,22 @@ static int mpi_mult_mpi_overlong(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbe
+         .MBEDTLS_PRIVATE(n) = y_words - words_slice,
+         .MBEDTLS_PRIVATE(s) = Y->MBEDTLS_PRIVATE(s)
+     };
+-    mbedtls_mpi_init(&Ztemp);
++    esp_mbedtls_mpi_init(&Ztemp);
+ 
+     /* Get result Ztemp = Yp * X (need temporary variable Ztemp) */
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi(&Ztemp, X, &Yp) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_mul_mpi(&Ztemp, X, &Yp) );
+ 
+     /* Z = Ypp * Y */
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi(Z, X, &Ypp) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_mul_mpi(Z, X, &Ypp) );
+ 
+     /* Z = Z << b */
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_shift_l(Z, words_slice * 32) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_shift_l(Z, words_slice * 32) );
+ 
+     /* Z += Ztemp */
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_add_mpi(Z, Z, &Ztemp) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_add_mpi(Z, Z, &Ztemp) );
+ 
+ cleanup:
+-    mbedtls_mpi_free(&Ztemp);
++    esp_mbedtls_mpi_free(&Ztemp);
+ 
+     return ret;
+ }
+@@ -638,7 +638,7 @@ static int mpi_mult_mpi_failover_mod_mult( mbedtls_mpi *Z, const mbedtls_mpi *X,
+     esp_mpi_enable_hardware_hw_op();
+ 
+     esp_mpi_mult_mpi_failover_mod_mult_hw_op(X, Y, hw_words );
+-    MBEDTLS_MPI_CHK( mbedtls_mpi_grow(Z, hw_words) );
++    MBEDTLS_MPI_CHK( esp_mbedtls_mpi_grow(Z, hw_words) );
+     esp_mpi_read_result_hw_op(Z, hw_words);
+ 
+     Z->MBEDTLS_PRIVATE(s) = X->MBEDTLS_PRIVATE(s) * Y->MBEDTLS_PRIVATE(s);
+diff --git a/components/mbedtls/port/esp_ds/esp_rsa_sign_alt.c b/components/mbedtls/port/esp_ds/esp_rsa_sign_alt.c
+index 86e15b6950f4ac1df723c94b83440fe1ee2298d9..fdae6aee35680fca138508873f931876ab1da962 100644
+--- a/components/mbedtls/port/esp_ds/esp_rsa_sign_alt.c
++++ b/components/mbedtls/port/esp_ds/esp_rsa_sign_alt.c
+@@ -101,7 +101,7 @@ size_t esp_ds_get_keylen(void *ctx)
+     return ((s_ds_data->rsa_length + 1) * FACTOR_KEYLEN_IN_BYTES);
+ }
+ 
+-static int rsa_rsassa_pkcs1_v15_encode( mbedtls_md_type_t md_alg,
++static int esp_rsa_rsassa_pkcs1_v15_encode( mbedtls_md_type_t md_alg,
+                                         unsigned int hashlen,
+                                         const unsigned char *hash,
+                                         size_t dst_len,
+@@ -114,7 +114,7 @@ static int rsa_rsassa_pkcs1_v15_encode( mbedtls_md_type_t md_alg,
+ 
+     /* Are we signing hashed or raw data? */
+     if ( md_alg != MBEDTLS_MD_NONE ) {
+-        const mbedtls_md_info_t *md_info = mbedtls_md_info_from_type( md_alg );
++        const mbedtls_md_info_t *md_info = esp_mbedtls_md_info_from_type( md_alg );
+         if ( md_info == NULL ) {
+             return ( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
+         }
+@@ -123,7 +123,7 @@ static int rsa_rsassa_pkcs1_v15_encode( mbedtls_md_type_t md_alg,
+             return ( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
+         }
+ 
+-        hashlen = mbedtls_md_get_size( md_info );
++        hashlen = esp_mbedtls_md_get_size( md_info );
+ 
+         /* Double-check that 8 + hashlen + oid_size can be used as a
+          * 1-byte ASN.1 length encoding and that there's no overflow. */
+@@ -207,7 +207,7 @@ static int rsa_rsassa_pkcs1_v15_encode( mbedtls_md_type_t md_alg,
+     /* Just a sanity-check, should be automatic
+      * after the initial bounds check. */
+     if ( p != dst + dst_len ) {
+-        mbedtls_platform_zeroize( dst, dst_len );
++        esp_mbedtls_platform_zeroize( dst, dst_len );
+         return ( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
+     }
+ 
+@@ -229,7 +229,7 @@ int esp_ds_rsa_sign( void *ctx,
+         return -1;
+     }
+ 
+-    if ((ret = (rsa_rsassa_pkcs1_v15_encode( md_alg, hashlen, hash, ((s_ds_data->rsa_length + 1) * FACTOR_KEYLEN_IN_BYTES), sig ))) != 0) {
++    if ((ret = (esp_rsa_rsassa_pkcs1_v15_encode( md_alg, hashlen, hash, ((s_ds_data->rsa_length + 1) * FACTOR_KEYLEN_IN_BYTES), sig ))) != 0) {
+         ESP_LOGE(TAG, "Error in pkcs1_v15 encoding, returned %d", ret);
+         heap_caps_free(signature);
+         return -1;
+diff --git a/components/mbedtls/port/esp_timing.c b/components/mbedtls/port/esp_timing.c
+index d310f757723d511763e0cccd49f6022ead9a07fc..e8068a3876b1d9c2cfdc7a6d3cf22530e4f64f48 100644
+--- a/components/mbedtls/port/esp_timing.c
++++ b/components/mbedtls/port/esp_timing.c
+@@ -8,10 +8,10 @@
+  * SPDX-FileContributor: 2016-2022 Espressif Systems (Shanghai) CO LTD
+  */
+ /*
+- * mbedtls_timing_get_timer()m mbedtls_timing_set_delay() and
+- * mbedtls_timing_set_delay only abstracted from mbedtls/library/timing.c
++ * esp_mbedtls_timing_get_timer()m esp_mbedtls_timing_set_delay() and
++ * esp_mbedtls_timing_set_delay only abstracted from mbedtls/library/timing.c
+  * as that does not build on ESP-IDF but these 2 functions are needed for
+- * DTLS (in particular mbedtls_ssl_set_timer_cb() must be called for DTLS
++ * DTLS (in particular esp_mbedtls_ssl_set_timer_cb() must be called for DTLS
+  * which requires these 2 delay functions).
+  */
+ 
+@@ -27,7 +27,7 @@ struct _hr_time
+     struct timeval start;
+ };
+ 
+-unsigned long mbedtls_timing_get_timer( struct mbedtls_timing_hr_time *val, int reset )
++unsigned long esp_mbedtls_timing_get_timer( struct mbedtls_timing_hr_time *val, int reset )
+ {
+     struct _hr_time *t = (struct _hr_time *) val;
+ 
+@@ -50,7 +50,7 @@ unsigned long mbedtls_timing_get_timer( struct mbedtls_timing_hr_time *val, int
+ /*
+  * Set delays to watch
+  */
+-void mbedtls_timing_set_delay( void *data, uint32_t int_ms, uint32_t fin_ms )
++void esp_mbedtls_timing_set_delay( void *data, uint32_t int_ms, uint32_t fin_ms )
+ {
+     mbedtls_timing_delay_context *ctx = (mbedtls_timing_delay_context *) data;
+ 
+@@ -58,13 +58,13 @@ void mbedtls_timing_set_delay( void *data, uint32_t int_ms, uint32_t fin_ms )
+     ctx->MBEDTLS_PRIVATE(fin_ms) = fin_ms;
+ 
+     if( fin_ms != 0 )
+-        (void) mbedtls_timing_get_timer( &ctx->MBEDTLS_PRIVATE(timer), 1 );
++        (void) esp_mbedtls_timing_get_timer( &ctx->MBEDTLS_PRIVATE(timer), 1 );
+ }
+ 
+ /*
+  * Get number of delays expired
+  */
+-int mbedtls_timing_get_delay( void *data )
++int esp_mbedtls_timing_get_delay( void *data )
+ {
+     mbedtls_timing_delay_context *ctx = (mbedtls_timing_delay_context *) data;
+     unsigned long elapsed_ms;
+@@ -72,7 +72,7 @@ int mbedtls_timing_get_delay( void *data )
+     if( ctx->MBEDTLS_PRIVATE(fin_ms) == 0 )
+         return( -1 );
+ 
+-    elapsed_ms = mbedtls_timing_get_timer( &ctx->MBEDTLS_PRIVATE(timer), 0 );
++    elapsed_ms = esp_mbedtls_timing_get_timer( &ctx->MBEDTLS_PRIVATE(timer), 0 );
+ 
+     if( elapsed_ms >= ctx->MBEDTLS_PRIVATE(fin_ms) )
+         return( 2 );
+diff --git a/components/mbedtls/port/include/aes/esp_aes_gcm.h b/components/mbedtls/port/include/aes/esp_aes_gcm.h
+index 0336ca49d46c26ef73f1b7499428bf9d7c2ae2af..de264c972276d31272b0abde8d94309e58ffd513 100644
+--- a/components/mbedtls/port/include/aes/esp_aes_gcm.h
++++ b/components/mbedtls/port/include/aes/esp_aes_gcm.h
+@@ -99,14 +99,14 @@ int esp_aes_gcm_starts( esp_gcm_context *ctx,
+  *                  (authenticated but not encrypted data) in a GCM
+  *                  encryption or decryption operation.
+  *
+- *                  Call this function after mbedtls_gcm_starts() to pass
++ *                  Call this function after esp_mbedtls_gcm_starts() to pass
+  *                  the associated data. If the associated data is empty,
+  *                  you do not need to call this function. You may not
+- *                  call this function after calling mbedtls_cipher_update().
++ *                  call this function after calling esp_mbedtls_cipher_update().
+  *
+  * \param ctx       The GCM context. This must have been started with
+- *                  mbedtls_gcm_starts() and must not have yet received
+- *                  any input with mbedtls_gcm_update().
++ *                  esp_mbedtls_gcm_starts() and must not have yet received
++ *                  any input with esp_mbedtls_gcm_update().
+  * \param aad       The buffer holding the additional data, or \c NULL
+  *                  if \p aad_len is \c 0.
+  * \param aad_len   The length of the additional data. If \c 0,
+@@ -126,7 +126,7 @@ int esp_aes_gcm_update_ad( esp_gcm_context *ctx,
+  *                  to pass successive parts of the input: the plaintext to
+  *                  encrypt, or the ciphertext (not including the tag) to
+  *                  decrypt. After the last part of the input, call
+- *                  mbedtls_gcm_finish().
++ *                  esp_mbedtls_gcm_finish().
+  *
+  *                  This function may produce output in one of the following
+  *                  ways:
+@@ -191,10 +191,10 @@ int esp_aes_gcm_update( esp_gcm_context *ctx,
+  *                  buffer of at least \p output_size bytes.
+  * \param output_size  The size of the \p output buffer in bytes.
+  *                  This must be large enough for the output that
+- *                  mbedtls_gcm_update() has not produced. In particular:
+- *                  - If mbedtls_gcm_update() produces immediate output,
++ *                  esp_mbedtls_gcm_update() has not produced. In particular:
++ *                  - If esp_mbedtls_gcm_update() produces immediate output,
+  *                    or if the total input size is a multiple of \c 16,
+- *                    then mbedtls_gcm_finish() never produces any output,
++ *                    then esp_mbedtls_gcm_finish() never produces any output,
+  *                    so \p output_size can be \c 0.
+  *                  - \p output_size never needs to be more than \c 15.
+  * \param output_length On success, \p *output_length contains the actual
+@@ -231,7 +231,7 @@ void esp_aes_gcm_free( esp_gcm_context *ctx);
+  * \param mode      The operation to perform: #MBEDTLS_GCM_ENCRYPT or
+  *                  #MBEDTLS_GCM_DECRYPT.
+  * \param length    The length of the input data. This must be a multiple of
+- *                  16 except in the last call before mbedtls_gcm_finish().
++ *                  16 except in the last call before esp_mbedtls_gcm_finish().
+  * \param iv        The initialization vector.
+  * \param iv_len    The length of the IV.
+  * \param aad       The buffer holding the additional data.
+@@ -266,7 +266,7 @@ int esp_aes_gcm_crypt_and_tag( esp_gcm_context *ctx,
+  *
+  * \param ctx       The GCM context.
+  * \param length    The length of the input data. This must be a multiple
+- *                  of 16 except in the last call before mbedtls_gcm_finish().
++ *                  of 16 except in the last call before esp_mbedtls_gcm_finish().
+  * \param iv        The initialization vector.
+  * \param iv_len    The length of the IV.
+  * \param aad       The buffer holding the additional data.
+diff --git a/components/mbedtls/port/include/aes_alt.h b/components/mbedtls/port/include/aes_alt.h
+index 2f8e958b27d3e3894c2f7f472bb78ac4bd49d2ea..06b0758cd363e8f4eb76a892e6f7d75fe37cb6f2 100644
+--- a/components/mbedtls/port/include/aes_alt.h
++++ b/components/mbedtls/port/include/aes_alt.h
+@@ -32,34 +32,34 @@ extern "C" {
+ 
+ typedef esp_aes_context mbedtls_aes_context;
+ 
+-#define mbedtls_aes_init            esp_aes_init
+-#define mbedtls_aes_free            esp_aes_free
+-#define mbedtls_aes_setkey_enc      esp_aes_setkey
+-#define mbedtls_aes_setkey_dec      esp_aes_setkey
+-#define mbedtls_aes_crypt_ecb       esp_aes_crypt_ecb
++#define esp_mbedtls_aes_init            esp_aes_init
++#define esp_mbedtls_aes_free            esp_aes_free
++#define esp_mbedtls_aes_setkey_enc      esp_aes_setkey
++#define esp_mbedtls_aes_setkey_dec      esp_aes_setkey
++#define esp_mbedtls_aes_crypt_ecb       esp_aes_crypt_ecb
+ #if defined(MBEDTLS_CIPHER_MODE_CBC)
+-#define mbedtls_aes_crypt_cbc       esp_aes_crypt_cbc
++#define esp_mbedtls_aes_crypt_cbc       esp_aes_crypt_cbc
+ #endif
+ #if defined(MBEDTLS_CIPHER_MODE_CFB)
+-#define mbedtls_aes_crypt_cfb128    esp_aes_crypt_cfb128
+-#define mbedtls_aes_crypt_cfb8      esp_aes_crypt_cfb8
++#define esp_mbedtls_aes_crypt_cfb128    esp_aes_crypt_cfb128
++#define esp_mbedtls_aes_crypt_cfb8      esp_aes_crypt_cfb8
+ #endif
+ #if defined(MBEDTLS_CIPHER_MODE_CTR)
+-#define mbedtls_aes_crypt_ctr       esp_aes_crypt_ctr
++#define esp_mbedtls_aes_crypt_ctr       esp_aes_crypt_ctr
+ #endif
+ #if defined(MBEDTLS_CIPHER_MODE_OFB)
+-#define mbedtls_aes_crypt_ofb       esp_aes_crypt_ofb
++#define esp_mbedtls_aes_crypt_ofb       esp_aes_crypt_ofb
+ #endif
+ #if defined(MBEDTLS_CIPHER_MODE_XTS)
+ typedef esp_aes_xts_context mbedtls_aes_xts_context;
+-#define mbedtls_aes_xts_init            esp_aes_xts_init
+-#define mbedtls_aes_xts_free            esp_aes_xts_free
+-#define mbedtls_aes_xts_setkey_enc      esp_aes_xts_setkey_enc
+-#define mbedtls_aes_xts_setkey_dec      esp_aes_xts_setkey_dec
+-#define mbedtls_aes_crypt_xts       esp_aes_crypt_xts
++#define esp_mbedtls_aes_xts_init            esp_aes_xts_init
++#define esp_mbedtls_aes_xts_free            esp_aes_xts_free
++#define esp_mbedtls_aes_xts_setkey_enc      esp_aes_xts_setkey_enc
++#define esp_mbedtls_aes_xts_setkey_dec      esp_aes_xts_setkey_dec
++#define esp_mbedtls_aes_crypt_xts       esp_aes_crypt_xts
+ #endif
+-#define mbedtls_internal_aes_encrypt         esp_internal_aes_encrypt
+-#define mbedtls_internal_aes_decrypt         esp_internal_aes_decrypt
++#define esp_mbedtls_internal_aes_encrypt         esp_internal_aes_encrypt
++#define esp_mbedtls_internal_aes_decrypt         esp_internal_aes_decrypt
+ #endif /* MBEDTLS_AES_ALT */
+ 
+ #ifdef __cplusplus
+diff --git a/components/mbedtls/port/include/ecc_impl.h b/components/mbedtls/port/include/ecc_impl.h
+index c52c988195bafaf6408866fad2c034fbc98919b3..36ebcd4648f5851aa08d3c53ffd5bf275c6cff36 100644
+--- a/components/mbedtls/port/include/ecc_impl.h
++++ b/components/mbedtls/port/include/ecc_impl.h
+@@ -28,7 +28,7 @@ typedef struct {
+ } ecc_point_t;
+ 
+ /**
+- * @brief Perform ECC point multiplication (R = K * (Px, Py))
++ * @brief Perform ECC point multiplication (R = esp_K * (Px, Py))
+  *
+  * @param point ECC point (multiplicand)
+  * @param scalar Integer represented in byte array format (multiplier)
+diff --git a/components/mbedtls/port/include/esp_ds/esp_rsa_sign_alt.h b/components/mbedtls/port/include/esp_ds/esp_rsa_sign_alt.h
+index 7c00ced5482a1f1c98333dec12c2a791d5474022..2c5f740c1cc0b1c519d8beeedcac174981f21e8b 100644
+--- a/components/mbedtls/port/include/esp_ds/esp_rsa_sign_alt.h
++++ b/components/mbedtls/port/include/esp_ds/esp_rsa_sign_alt.h
+@@ -52,7 +52,7 @@ void esp_ds_release_ds_lock(void);
+ 
+ /**
+  *
+- * @brief       Alternate implementation for mbedtls_rsa_rsassa_pkcs1_v15_sign, Internally makes use
++ * @brief       Alternate implementation for esp_mbedtls_rsa_rsassa_pkcs1_v15_sign, Internally makes use
+  *              of DS module to perform hardware accelerated RSA sign operation
+  */
+ int esp_ds_rsa_sign( void *ctx,
+diff --git a/components/mbedtls/port/include/gcm_alt.h b/components/mbedtls/port/include/gcm_alt.h
+index c4aa7c9925f37a67eb34313463df685bad5ccb31..06da7d23cdba8eae84ad65791e77cdf1584ffe7b 100644
+--- a/components/mbedtls/port/include/gcm_alt.h
++++ b/components/mbedtls/port/include/gcm_alt.h
+@@ -24,15 +24,15 @@ extern "C" {
+ 
+ typedef esp_gcm_context mbedtls_gcm_context;
+ 
+-#define mbedtls_gcm_init            esp_aes_gcm_init
+-#define mbedtls_gcm_free            esp_aes_gcm_free
+-#define mbedtls_gcm_setkey          esp_aes_gcm_setkey
+-#define mbedtls_gcm_starts          esp_aes_gcm_starts
+-#define mbedtls_gcm_update_ad       esp_aes_gcm_update_ad
+-#define mbedtls_gcm_update          esp_aes_gcm_update
+-#define mbedtls_gcm_finish          esp_aes_gcm_finish
+-#define mbedtls_gcm_auth_decrypt    esp_aes_gcm_auth_decrypt
+-#define mbedtls_gcm_crypt_and_tag   esp_aes_gcm_crypt_and_tag
++#define esp_mbedtls_gcm_init            esp_aes_gcm_init
++#define esp_mbedtls_gcm_free            esp_aes_gcm_free
++#define esp_mbedtls_gcm_setkey          esp_aes_gcm_setkey
++#define esp_mbedtls_gcm_starts          esp_aes_gcm_starts
++#define esp_mbedtls_gcm_update_ad       esp_aes_gcm_update_ad
++#define esp_mbedtls_gcm_update          esp_aes_gcm_update
++#define esp_mbedtls_gcm_finish          esp_aes_gcm_finish
++#define esp_mbedtls_gcm_auth_decrypt    esp_aes_gcm_auth_decrypt
++#define esp_mbedtls_gcm_crypt_and_tag   esp_aes_gcm_crypt_and_tag
+ 
+ #endif // SOC_AES_SUPPORT_GCM
+ 
+diff --git a/components/mbedtls/port/include/mbedtls/bignum.h b/components/mbedtls/port/include/mbedtls/bignum.h
+index 4f84bed74076e12f78d9f4388ef9f88bdb2708b4..3f7ea3ed19ee11c07db02f969c81281eb7a6f7bc 100644
+--- a/components/mbedtls/port/include/mbedtls/bignum.h
++++ b/components/mbedtls/port/include/mbedtls/bignum.h
+@@ -60,7 +60,7 @@ void esp_mpi_release_hardware(void);
+  *
+  * @note All of X, Y & Z should be less than 4096 bit long or an error is returned.
+  *
+- * @param Z Result bignum, should be pre-initialised with mbedtls_mpi_init().
++ * @param Z Result bignum, should be pre-initialised with esp_mbedtls_mpi_init().
+  * @param X First multiplication argument.
+  * @param Y Second multiplication argument.
+  * @param M Modulus value for result.
+diff --git a/components/mbedtls/port/include/mbedtls/ecp.h b/components/mbedtls/port/include/mbedtls/ecp.h
+index 28ccd5c79ce826cffa5bd4b71ff860dff64c92ae..4aa9d9d4f66cad750d8182b0ad7c170fa0ef3596 100644
+--- a/components/mbedtls/port/include/mbedtls/ecp.h
++++ b/components/mbedtls/port/include/mbedtls/ecp.h
+@@ -20,7 +20,7 @@ int ecp_mul_restartable_internal( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
+ #endif
+ 
+ #if defined(MBEDTLS_ECP_MUL_ALT_SOFT_FALLBACK)
+-int ecp_mul_restartable_internal_soft( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
++int esp_ecp_mul_restartable_internal_soft( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
+              const mbedtls_mpi *m, const mbedtls_ecp_point *P,
+              int (*f_rng)(void *, unsigned char *, size_t), void *p_rng,
+              mbedtls_ecp_restart_ctx *rs_ctx );
+@@ -28,7 +28,7 @@ int ecp_mul_restartable_internal_soft( mbedtls_ecp_group *grp, mbedtls_ecp_point
+ 
+ #if defined(MBEDTLS_ECP_VERIFY_ALT_SOFT_FALLBACK)
+ 
+-int mbedtls_ecp_check_pubkey_soft(const mbedtls_ecp_group *grp,
++int esp_mbedtls_ecp_check_pubkey_soft(const mbedtls_ecp_group *grp,
+                               const mbedtls_ecp_point *pt );
+ #endif
+ 
+diff --git a/components/mbedtls/port/include/mbedtls/esp_config.h b/components/mbedtls/port/include/mbedtls/esp_config.h
+index 4a8387ba8b66d7a8aabdfcec332c386a0601a433..dbb70ae01952a5d22b48a672438daad849497920 100644
+--- a/components/mbedtls/port/include/mbedtls/esp_config.h
++++ b/components/mbedtls/port/include/mbedtls/esp_config.h
+@@ -3,7 +3,7 @@
+  * \brief Default mbedTLS configuration options for ESP-IDF
+  *
+  *  This set of compile-time options may be used to enable
+- *  or disable features selectively, and reduce the global
++ *  or disable esp_features selectively, and reduce the global
+  *  memory footprint.
+  */
+ /*
+@@ -11,7 +11,7 @@
+  *  SPDX-License-Identifier: Apache-2.0
+  *
+  * This set of compile-time options may be used to enable
+- * or disable features selectively, and reduce the global
++ * or disable esp_features selectively, and reduce the global
+  * memory footprint.
+  *
+  * SPDX-FileCopyrightText: The Mbed TLS Contributors
+@@ -71,7 +71,7 @@
+ /**
+  * \def MBEDTLS_PLATFORM_TIME_ALT
+  *
+- * mbed TLS will provide a function "mbedtls_platform_set_time()"
++ * mbed TLS will provide a function "esp_mbedtls_platform_set_time()"
+  * that allows you to set an alternative time function pointer.
+  *
+  * All these define require MBEDTLS_PLATFORM_C to be defined!
+@@ -98,7 +98,7 @@
+  *
+  * Enabling MBEDTLS_PLATFORM_MEMORY without the
+  * MBEDTLS_PLATFORM_{FREE,CALLOC}_MACROs will provide
+- * "mbedtls_platform_set_calloc_free()" allowing you to set an alternative calloc() and
++ * "esp_mbedtls_platform_set_calloc_free()" allowing you to set an alternative calloc() and
+  * free() function pointer at runtime.
+  *
+  * Enabling MBEDTLS_PLATFORM_MEMORY and specifying
+@@ -123,7 +123,7 @@
+ /**
+  * \name SECTION: mbed TLS feature support
+  *
+- * This section sets support for features that are or are not needed
++ * This section sets support for esp_features that are or are not needed
+  * within the modules that are enabled.
+  * \{
+  */
+@@ -299,9 +299,9 @@
+  * #MBEDTLS_ERR_ECP_IN_PROGRESS (or, for functions in the SSL module,
+  * #MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) and then be called later again in
+  * order to further progress and eventually complete their operation. This is
+- * controlled through mbedtls_ecp_set_max_ops() which limits the maximum
++ * controlled through esp_mbedtls_ecp_set_max_ops() which limits the maximum
+  * number of ECC operations a function may perform before pausing; see
+- * mbedtls_ecp_set_max_ops() for more information.
++ * esp_mbedtls_ecp_set_max_ops() for more information.
+  *
+  * This is useful in non-threaded environments if you want to avoid blocking
+  * for too long on ECC (and, hence, X.509 or SSL/TLS) operations.
+@@ -786,15 +786,15 @@
+ /**
+  * \def MBEDTLS_ERROR_STRERROR_DUMMY
+  *
+- * Enable a dummy error function to make use of mbedtls_strerror() in
++ * Enable a dummy error function to make use of esp_mbedtls_strerror() in
+  * third party libraries easier when MBEDTLS_ERROR_C is disabled
+  * (no effect when MBEDTLS_ERROR_C is enabled).
+  *
+  * You can safely disable this if MBEDTLS_ERROR_C is enabled, or if you're
+- * not using mbedtls_strerror() or error_strerror() in your application.
++ * not using esp_mbedtls_strerror() or error_strerror() in your application.
+  *
+  * Disable if you run into name conflicts and want to really remove the
+- * mbedtls_strerror()
++ * esp_mbedtls_strerror()
+  */
+ #define MBEDTLS_ERROR_STRERROR_DUMMY
+ 
+@@ -886,8 +886,8 @@
+  * which allows to identify DTLS connections across changes
+  * in the underlying transport.
+  *
+- * Setting this option enables the SSL APIs `mbedtls_ssl_set_cid()`,
+- * `mbedtls_ssl_get_peer_cid()` and `mbedtls_ssl_conf_cid()`.
++ * Setting this option enables the SSL APIs `esp_mbedtls_ssl_set_cid()`,
++ * `esp_mbedtls_ssl_get_peer_cid()` and `esp_mbedtls_ssl_conf_cid()`.
+  * See the corresponding documentation for more information.
+  *
+  * \warning The Connection ID extension is still in draft state.
+@@ -913,7 +913,7 @@
+  * \def MBEDTLS_SSL_CONTEXT_SERIALIZATION
+  *
+  * Enable serialization of the TLS context structures, through use of the
+- * functions mbedtls_ssl_context_save() and mbedtls_ssl_context_load().
++ * functions esp_mbedtls_ssl_context_save() and esp_mbedtls_ssl_context_load().
+  *
+  * This pair of functions allows one side of a connection to serialize the
+  * context associated with the connection, then free or re-use that context
+@@ -1001,13 +1001,13 @@
+ /**
+  * \def MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
+  *
+- * This option controls the availability of the API mbedtls_ssl_get_peer_cert()
++ * This option controls the availability of the API esp_mbedtls_ssl_get_peer_cert()
+  * giving access to the peer's certificate after completion of the handshake.
+  *
+  * Unless you need mbedtls_ssl_peer_cert() in your application, it is
+  * recommended to disable this option for reduced RAM usage.
+  *
+- * \note If this option is disabled, mbedtls_ssl_get_peer_cert() is still
++ * \note If this option is disabled, esp_mbedtls_ssl_get_peer_cert() is still
+  *       defined, but always returns \c NULL.
+  *
+  * \note This option has no influence on the protection against the
+@@ -1056,7 +1056,7 @@
+  * \note   Even if this option is disabled, both client and server are aware
+  *         of the Renegotiation Indication Extension (RFC 5746) used to
+  *         prevent the SSL renegotiation attack (see RFC 5746 Sect. 1).
+- *         (See \c mbedtls_ssl_conf_legacy_renegotiation for the
++ *         (See \c esp_mbedtls_ssl_conf_legacy_renegotiation for the
+  *          configuration of this extension).
+  *
+  */
+@@ -1176,7 +1176,7 @@
+  *           MBEDTLS_SSL_PROTO_DTLS
+  *
+  * \warning Disabling this is often a security risk!
+- * See mbedtls_ssl_conf_dtls_anti_replay() for details.
++ * See esp_mbedtls_ssl_conf_dtls_anti_replay() for details.
+  *
+  * Comment this to disable anti-replay in DTLS.
+  */
+@@ -1228,7 +1228,7 @@
+  * The resulting key should then be passed to an SRTP stack.
+  *
+  * Setting this option enables the runtime API
+- * mbedtls_ssl_conf_dtls_srtp_protection_profiles()
++ * esp_mbedtls_ssl_conf_dtls_srtp_protection_profiles()
+  * through which the supported DTLS-SRTP protection
+  * profiles can be configured. You must call this API at
+  * runtime if you wish to negotiate the use of DTLS-SRTP.
+@@ -1321,9 +1321,9 @@
+  *
+  * \def MBEDTLS_VERSION_FEATURES
+  *
+- * Allow run-time checking of compile-time enabled features. Thus allowing users
++ * Allow run-time checking of compile-time enabled esp_features. Thus allowing users
+  * to check at run-time if the library is for instance compiled with threading
+- * support via mbedtls_version_check_feature().
++ * support via esp_mbedtls_version_check_feature().
+  *
+  * Requires: MBEDTLS_VERSION_C
+  *
+@@ -1827,7 +1827,7 @@
+  * Module:  library/error.c
+  * Caller:
+  *
+- * This module enables mbedtls_strerror().
++ * This module enables esp_mbedtls_strerror().
+  */
+ #define MBEDTLS_ERROR_C
+ 
+@@ -1887,7 +1887,7 @@
+  *
+  * Enable the generic message digest layer.
+  *
+- * Module:  library/mbedtls_md.c
++ * Module:  library/esp_mbedtls_md.c
+  * Caller:
+  *
+  * Uncomment to enable generic message digest wrappers.
+@@ -1899,8 +1899,8 @@
+  *
+  * Enable the MD5 hash algorithm.
+  *
+- * Module:  library/mbedtls_md5.c
+- * Caller:  library/mbedtls_md.c
++ * Module:  library/esp_mbedtls_md5.c
++ * Caller:  library/esp_mbedtls_md.c
+  *          library/pem.c
+  *          library/ssl_tls.c
+  *
+@@ -2113,8 +2113,8 @@
+  *
+  * Enable the RIPEMD-160 hash algorithm.
+  *
+- * Module:  library/mbedtls_ripemd160.c
+- * Caller:  library/mbedtls_md.c
++ * Module:  library/esp_mbedtls_ripemd160.c
++ * Caller:  library/esp_mbedtls_md.c
+  *
+  */
+ #ifdef CONFIG_MBEDTLS_RIPEMD160_C
+@@ -2146,8 +2146,8 @@
+  *
+  * Enable the SHA1 cryptographic hash algorithm.
+  *
+- * Module:  library/mbedtls_sha1.c
+- * Caller:  library/mbedtls_md.c
++ * Module:  library/esp_mbedtls_sha1.c
++ * Caller:  library/esp_mbedtls_md.c
+  *          library/ssl_cli.c
+  *          library/ssl_srv.c
+  *          library/ssl_tls.c
+@@ -2162,9 +2162,9 @@
+  *
+  * Enable the SHA-224 and SHA-256 cryptographic hash algorithms.
+  *
+- * Module:  library/mbedtls_sha256.c
++ * Module:  library/esp_mbedtls_sha256.c
+  * Caller:  library/entropy.c
+- *          library/mbedtls_md.c
++ *          library/esp_mbedtls_md.c
+  *          library/ssl_cli.c
+  *          library/ssl_srv.c
+  *          library/ssl_tls.c
+@@ -2179,9 +2179,9 @@
+  *
+  * Enable the SHA-384 and SHA-512 cryptographic hash algorithms.
+  *
+- * Module:  library/mbedtls_sha512.c
++ * Module:  library/esp_mbedtls_sha512.c
+  * Caller:  library/entropy.c
+- *          library/mbedtls_md.c
++ *          library/esp_mbedtls_md.c
+  *          library/ssl_cli.c
+  *          library/ssl_srv.c
+  *
+@@ -2297,7 +2297,7 @@
+  * \note The provided implementation only works on POSIX/Unix (including Linux,
+  * BSD and OS X) and Windows. On other platforms, you can either disable that
+  * module and provide your own implementations of the callbacks needed by
+- * \c mbedtls_ssl_set_timer_cb() for DTLS, or leave it enabled and provide
++ * \c esp_mbedtls_ssl_set_timer_cb() for DTLS, or leave it enabled and provide
+  * your own implementation of the whole module by setting
+  * \c MBEDTLS_TIMING_ALT in the current file.
+  *
+@@ -2442,8 +2442,8 @@
+ /**
+  * \def MBEDTLS_X509_TRUSTED_CERTIFICATE_CALLBACK
+  *
+- * If set, this enables the X.509 API `mbedtls_x509_crt_verify_with_ca_cb()`
+- * and the SSL API `mbedtls_ssl_conf_ca_cb()` which allow users to configure
++ * If set, this enables the X.509 API `esp_mbedtls_x509_crt_verify_with_ca_cb()`
++ * and the SSL API `esp_mbedtls_ssl_conf_ca_cb()` which allow users to configure
+  * the set of trusted certificates through a callback instead of a linked
+  * list.
+  *
+@@ -2451,8 +2451,8 @@
+  * certificates is present and storing them in a linked list isn't efficient
+  * enough, or when the set of trusted certificates changes frequently.
+  *
+- * See the documentation of `mbedtls_x509_crt_verify_with_ca_cb()` and
+- * `mbedtls_ssl_conf_ca_cb()` for more information.
++ * See the documentation of `esp_mbedtls_x509_crt_verify_with_ca_cb()` and
++ * `esp_mbedtls_ssl_conf_ca_cb()` for more information.
+  *
+  * Uncomment to enable trusted certificate callbacks.
+  */
+@@ -2595,7 +2595,7 @@
+ /**
+  * Allow SHA-1 in the default TLS configuration for TLS 1.2 handshake
+  * signature and ciphersuite selection. Without this build-time option, SHA-1
+- * support must be activated explicitly through mbedtls_ssl_conf_sig_hashes.
++ * support must be activated explicitly through esp_mbedtls_ssl_conf_sig_hashes.
+  * The use of SHA-1 in TLS <= 1.1 and in HMAC-SHA-1 is always allowed by
+  * default. At the time of writing, there is no practical attack on the use
+  * of SHA-1 in handshake signatures, hence this option is turned on by default
+diff --git a/components/mbedtls/port/include/md/esp_md.h b/components/mbedtls/port/include/md/esp_md.h
+index 3d93dafa78c7e8096aa24ec62503b877b8d4fc72..8e656e9e1b6bec9f19999f51c277bd84d36da79d 100644
+--- a/components/mbedtls/port/include/md/esp_md.h
++++ b/components/mbedtls/port/include/md/esp_md.h
+@@ -66,7 +66,7 @@ void esp_md5_clone( mbedtls_md5_context *dst, const mbedtls_md5_context *src );
+  *                 stronger message digests instead.
+  *
+  */
+-int mbedtls_md5_starts( mbedtls_md5_context *ctx );
++int esp_mbedtls_md5_starts( mbedtls_md5_context *ctx );
+ 
+ /**
+  * \brief          MD5 process buffer
+diff --git a/components/mbedtls/port/include/md5_alt.h b/components/mbedtls/port/include/md5_alt.h
+index 788c6554eb431e02df4598e1114b673577a7fd53..253d53b92330324f49a33c97db63b433af176ec9 100644
+--- a/components/mbedtls/port/include/md5_alt.h
++++ b/components/mbedtls/port/include/md5_alt.h
+@@ -17,14 +17,14 @@ extern "C" {
+ #if defined(MBEDTLS_MD5_ALT)
+ #include "md/esp_md.h"
+ 
+-#define mbedtls_md5_init                        esp_md5_init
+-#define mbedtls_md5_update                      esp_md5_update
+-#define mbedtls_md5_finish                      esp_md5_finish
+-#define mbedtls_md5_starts                      esp_md5_starts
++#define esp_mbedtls_md5_init                        esp_md5_init
++#define esp_mbedtls_md5_update                      esp_md5_update
++#define esp_mbedtls_md5_finish                      esp_md5_finish
++#define esp_mbedtls_md5_starts                      esp_md5_starts
+ 
+-#define mbedtls_md5_free                        esp_md5_free
+-#define mbedtls_md5_clone                       esp_md5_clone
+-#define mbedtls_internal_md5_process            esp_md5_process
++#define esp_mbedtls_md5_free                        esp_md5_free
++#define esp_mbedtls_md5_clone                       esp_md5_clone
++#define esp_mbedtls_internal_md5_process            esp_md5_process
+ 
+ #endif /* MBEDTLS_MD5_ALT */
+ 
+diff --git a/components/mbedtls/port/mbedtls_debug.c b/components/mbedtls/port/mbedtls_debug.c
+index 23f7eab10ec90e15b950da45eaae20c7963eefc1..9af45be7216528f8088498211b2ec4955cd8f595 100644
+--- a/components/mbedtls/port/mbedtls_debug.c
++++ b/components/mbedtls/port/mbedtls_debug.c
+@@ -22,8 +22,8 @@ static void mbedtls_esp_debug(void *ctx, int level,
+ void mbedtls_esp_enable_debug_log(mbedtls_ssl_config *conf, int threshold)
+ {
+     esp_log_level_t level = ESP_LOG_NONE;
+-    mbedtls_debug_set_threshold(threshold);
+-    mbedtls_ssl_conf_dbg(conf, mbedtls_esp_debug, NULL);
++    esp_mbedtls_debug_set_threshold(threshold);
++    esp_mbedtls_ssl_conf_dbg(conf, mbedtls_esp_debug, NULL);
+     switch(threshold) {
+     case 1:
+         level = ESP_LOG_WARN;
+@@ -43,7 +43,7 @@ void mbedtls_esp_enable_debug_log(mbedtls_ssl_config *conf, int threshold)
+ 
+ void mbedtls_esp_disable_debug_log(mbedtls_ssl_config *conf)
+ {
+-    mbedtls_ssl_conf_dbg(conf, NULL, NULL);
++    esp_mbedtls_ssl_conf_dbg(conf, NULL, NULL);
+ }
+ 
+ 
+diff --git a/components/mbedtls/port/md/esp_md.c b/components/mbedtls/port/md/esp_md.c
+index eb54b5d85cc3ca1d52581873e3fbae731053b0d5..169107012311204f53a85f209ac85faddea8db17 100644
+--- a/components/mbedtls/port/md/esp_md.c
++++ b/components/mbedtls/port/md/esp_md.c
+@@ -44,7 +44,7 @@ void esp_md5_free( mbedtls_md5_context *ctx )
+         return;
+     }
+ 
+-    mbedtls_platform_zeroize( ctx, sizeof( mbedtls_md5_context ) );
++    esp_mbedtls_platform_zeroize( ctx, sizeof( mbedtls_md5_context ) );
+ }
+ 
+ int esp_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64] )
+diff --git a/components/mbedtls/port/net_sockets.c b/components/mbedtls/port/net_sockets.c
+index 102b9c802516980e39def2963c4e2a7150c99658..27bb54cdc4612566067e2aa56d05bd4c9aa749c8 100644
+--- a/components/mbedtls/port/net_sockets.c
++++ b/components/mbedtls/port/net_sockets.c
+@@ -19,9 +19,9 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdlib.h>
+-#define mbedtls_calloc    calloc
+-#define mbedtls_free      free
+-#define mbedtls_time      time
++#define esp_mbedtls_calloc    calloc
++#define esp_mbedtls_free      free
++#define esp_mbedtls_time      time
+ #define mbedtls_time_t    time_t
+ #endif
+ 
+@@ -40,7 +40,7 @@
+ /*
+  * Prepare for using the sockets interface
+  */
+-static int net_prepare( void )
++static int esp_net_prepare( void )
+ {
+     return ( 0 );
+ }
+@@ -48,7 +48,7 @@ static int net_prepare( void )
+ /*
+  * Initialize a context
+  */
+-void mbedtls_net_init( mbedtls_net_context *ctx )
++void esp_mbedtls_net_init( mbedtls_net_context *ctx )
+ {
+     ctx->fd = -1;
+ }
+@@ -56,12 +56,12 @@ void mbedtls_net_init( mbedtls_net_context *ctx )
+ /*
+  * Initiate a TCP connection with host:port and the given protocol
+  */
+-int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host, const char *port, int proto )
++int esp_mbedtls_net_connect( mbedtls_net_context *ctx, const char *host, const char *port, int proto )
+ {
+     int ret;
+     struct addrinfo hints, *addr_list, *cur;
+ 
+-    if ( ( ret = net_prepare() ) != 0 ) {
++    if ( ( ret = esp_net_prepare() ) != 0 ) {
+         return ( ret );
+     }
+ 
+@@ -103,7 +103,7 @@ int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host, const char
+ /*
+  * Create a listening socket on bind_ip:port
+  */
+-int mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char *port, int proto )
++int esp_mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char *port, int proto )
+ {
+     int ret;
+     struct addrinfo hints, *addr_list, *cur;
+@@ -112,7 +112,7 @@ int mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char
+     int n = 1;
+ #endif
+ 
+-    if ( ( ret = net_prepare() ) != 0 ) {
++    if ( ( ret = esp_net_prepare() ) != 0 ) {
+         return ( ret );
+     }
+ 
+@@ -180,7 +180,7 @@ int mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char
+  *
+  * Note: on a blocking socket this function always returns 0!
+  */
+-static int net_would_block( const mbedtls_net_context *ctx )
++static int esp_net_would_block( const mbedtls_net_context *ctx )
+ {
+     int error = errno;
+ 
+@@ -199,7 +199,7 @@ static int net_would_block( const mbedtls_net_context *ctx )
+ /*
+  * Accept a connection from a remote client
+  */
+-int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
++int esp_mbedtls_net_accept( mbedtls_net_context *bind_ctx,
+                         mbedtls_net_context *client_ctx,
+                         void *client_ip, size_t buf_size, size_t *ip_len )
+ {
+@@ -232,7 +232,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
+     }
+ 
+     if ( ret < 0 ) {
+-        if ( net_would_block( bind_ctx ) != 0 ) {
++        if ( esp_net_would_block( bind_ctx ) != 0 ) {
+             return ( MBEDTLS_ERR_SSL_WANT_READ );
+         }
+ 
+@@ -284,12 +284,12 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
+ /*
+  * Set the socket blocking or non-blocking
+  */
+-int mbedtls_net_set_block( mbedtls_net_context *ctx )
++int esp_mbedtls_net_set_block( mbedtls_net_context *ctx )
+ {
+     return ( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) & ~O_NONBLOCK ) );
+ }
+ 
+-int mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
++int esp_mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
+ {
+     return ( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) | O_NONBLOCK ) );
+ }
+@@ -297,7 +297,7 @@ int mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
+ /*
+  * Portable usleep helper
+  */
+-void mbedtls_net_usleep( unsigned long usec )
++void esp_mbedtls_net_usleep( unsigned long usec )
+ {
+     struct timeval tv;
+     tv.tv_sec  = usec / 1000000;
+@@ -308,7 +308,7 @@ void mbedtls_net_usleep( unsigned long usec )
+ /*
+  * Read at most 'len' characters
+  */
+-int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
++int esp_mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
+ {
+     int ret;
+     int fd = ((mbedtls_net_context *) ctx)->fd;
+@@ -320,7 +320,7 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
+     ret = (int) read( fd, buf, len );
+ 
+     if ( ret < 0 ) {
+-        if ( net_would_block( ctx ) != 0 ) {
++        if ( esp_net_would_block( ctx ) != 0 ) {
+             return ( MBEDTLS_ERR_SSL_WANT_READ );
+         }
+ 
+@@ -341,7 +341,7 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
+ /*
+  * Read at most 'len' characters, blocking for at most 'timeout' ms
+  */
+-int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
++int esp_mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
+                               uint32_t timeout )
+ {
+     int ret;
+@@ -375,13 +375,13 @@ int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
+     }
+ 
+     /* This call will not block */
+-    return ( mbedtls_net_recv( ctx, buf, len ) );
++    return ( esp_mbedtls_net_recv( ctx, buf, len ) );
+ }
+ 
+ /*
+  * Write at most 'len' characters
+  */
+-int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
++int esp_mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
+ {
+     int ret;
+     int fd = ((mbedtls_net_context *) ctx)->fd;
+@@ -393,7 +393,7 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
+     ret = (int) write( fd, buf, len );
+ 
+     if ( ret < 0 ) {
+-        if ( net_would_block( ctx ) != 0 ) {
++        if ( esp_net_would_block( ctx ) != 0 ) {
+             return ( MBEDTLS_ERR_SSL_WANT_WRITE );
+         }
+ 
+@@ -414,7 +414,7 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
+ /*
+  * Gracefully close the connection
+  */
+-void mbedtls_net_free( mbedtls_net_context *ctx )
++void esp_mbedtls_net_free( mbedtls_net_context *ctx )
+ {
+     if ( ctx->fd == -1) {
+         return;
+diff --git a/components/mbedtls/port/sha/block/esp_sha1.c b/components/mbedtls/port/sha/block/esp_sha1.c
+index 2a0c55aec0718ad14e0f9b63d201dd8360ef618e..d90907a2d82d59440bc691564d3d88767a7903c5 100644
+--- a/components/mbedtls/port/sha/block/esp_sha1.c
++++ b/components/mbedtls/port/sha/block/esp_sha1.c
+@@ -27,7 +27,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -56,14 +56,14 @@ static void mbedtls_zeroize( void *v, size_t n )
+ }
+ #endif
+ 
+-void mbedtls_sha1_init( mbedtls_sha1_context *ctx )
++void esp_mbedtls_sha1_init( mbedtls_sha1_context *ctx )
+ {
+     assert(ctx != NULL);
+ 
+     memset( ctx, 0, sizeof( mbedtls_sha1_context ) );
+ }
+ 
+-void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
++void esp_mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -71,7 +71,7 @@ void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha1_context ) );
+ }
+ 
+-void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
++void esp_mbedtls_sha1_clone( mbedtls_sha1_context *dst,
+                          const mbedtls_sha1_context *src )
+ {
+     memcpy(dst, src, sizeof(mbedtls_sha1_context));
+@@ -80,7 +80,7 @@ void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
+ /*
+  * SHA-1 context setup
+  */
+-int mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
++int esp_mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
+ {
+     ctx->total[0] = 0;
+     ctx->total[1] = 0;
+@@ -100,7 +100,7 @@ static void esp_internal_sha1_block_process(mbedtls_sha1_context *ctx, const uin
+     }
+ }
+ 
+-int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
++int esp_mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
+ {
+     esp_sha_acquire_hardware();
+     esp_sha_block(ctx->mode, data, ctx->first_block);
+@@ -108,7 +108,7 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned cha
+     return 0;
+ }
+ 
+-int mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
++int esp_mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
+ {
+     size_t fill;
+     uint32_t left, local_len = 0;
+@@ -179,7 +179,7 @@ static const unsigned char sha1_padding[64] = {
+ /*
+ * SHA-1 final digest
+  */
+-int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
++int esp_mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+ {
+     int ret;
+     uint32_t last, padn;
+@@ -197,10 +197,10 @@ int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+ 
+ 
+-    if ( ( ret = mbedtls_sha1_update( ctx, sha1_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha1_update( ctx, sha1_padding, padn ) ) != 0 ) {
+         return ret;
+     }
+-    if ( ( ret = mbedtls_sha1_update( ctx, msglen, 8 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha1_update( ctx, msglen, 8 ) ) != 0 ) {
+         return ret;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/block/esp_sha256.c b/components/mbedtls/port/sha/block/esp_sha256.c
+index 0b5f5f01bc71e9a3e96b007e121c2bd9946b1e6d..649fc177c2d8f49b9daa7bc18263aa765f1325f0 100644
+--- a/components/mbedtls/port/sha/block/esp_sha256.c
++++ b/components/mbedtls/port/sha/block/esp_sha256.c
+@@ -27,7 +27,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -65,14 +65,14 @@ do {                                                    \
+ } while( 0 )
+ #endif
+ 
+-void mbedtls_sha256_init( mbedtls_sha256_context *ctx )
++void esp_mbedtls_sha256_init( mbedtls_sha256_context *ctx )
+ {
+     assert(ctx != NULL);
+ 
+     memset( ctx, 0, sizeof( mbedtls_sha256_context ) );
+ }
+ 
+-void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
++void esp_mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -81,7 +81,7 @@ void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha256_context ) );
+ }
+ 
+-void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
++void esp_mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+                            const mbedtls_sha256_context *src )
+ {
+     *dst = *src;
+@@ -90,7 +90,7 @@ void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+ /*
+  * SHA-256 context setup
+  */
+-int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
++int esp_mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha256_context ) );
+ 
+@@ -112,7 +112,7 @@ static void esp_internal_sha256_block_process(mbedtls_sha256_context *ctx, const
+     }
+ }
+ 
+-int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
++int esp_mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
+ {
+     esp_sha_acquire_hardware();
+     esp_sha_block(ctx->mode, data, ctx->first_block);
+@@ -123,7 +123,7 @@ int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned
+ /*
+  * SHA-256 process buffer
+  */
+-int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input,
++int esp_mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input,
+                                size_t ilen )
+ {
+     size_t fill;
+@@ -198,7 +198,7 @@ static const unsigned char sha256_padding[64] = {
+ /*
+  * SHA-256 final digest
+  */
+-int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
++int esp_mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+ {
+     int ret;
+     uint32_t last, padn;
+@@ -215,11 +215,11 @@ int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+     last = ctx->total[0] & 0x3F;
+     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+ 
+-    if ( ( ret = mbedtls_sha256_update( ctx, sha256_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha256_update( ctx, sha256_padding, padn ) ) != 0 ) {
+         return ret;
+     }
+ 
+-    if ( ( ret = mbedtls_sha256_update( ctx, msglen, 8 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha256_update( ctx, msglen, 8 ) ) != 0 ) {
+         return ret;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/block/esp_sha512.c b/components/mbedtls/port/sha/block/esp_sha512.c
+index b3245a2474b9391d84f6c73846e5a0baeb2c66bf..2409837cf3d7fe88c904a6dc41ae201c10cf2d50 100644
+--- a/components/mbedtls/port/sha/block/esp_sha512.c
++++ b/components/mbedtls/port/sha/block/esp_sha512.c
+@@ -33,7 +33,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -87,14 +87,14 @@ void esp_sha512_set_t( mbedtls_sha512_context *ctx, uint16_t t_val)
+     ctx->t_val = t_val;
+ }
+ 
+-void mbedtls_sha512_init( mbedtls_sha512_context *ctx )
++void esp_mbedtls_sha512_init( mbedtls_sha512_context *ctx )
+ {
+     assert(ctx != NULL);
+ 
+     memset( ctx, 0, sizeof( mbedtls_sha512_context ) );
+ }
+ 
+-void mbedtls_sha512_free( mbedtls_sha512_context *ctx )
++void esp_mbedtls_sha512_free( mbedtls_sha512_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -103,7 +103,7 @@ void mbedtls_sha512_free( mbedtls_sha512_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha512_context ) );
+ }
+ 
+-void mbedtls_sha512_clone( mbedtls_sha512_context *dst,
++void esp_mbedtls_sha512_clone( mbedtls_sha512_context *dst,
+                            const mbedtls_sha512_context *src )
+ {
+     memcpy(dst, src, sizeof(mbedtls_sha512_context));
+@@ -112,7 +112,7 @@ void mbedtls_sha512_clone( mbedtls_sha512_context *dst,
+ /*
+  * SHA-512 context setup
+  */
+-int mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
++int esp_mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
+ {
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha512_context ) );
+ 
+@@ -136,7 +136,7 @@ static int esp_internal_sha512_block_process(mbedtls_sha512_context *ctx,
+     }
+ }
+ 
+-int mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
++int esp_mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
+ {
+     esp_sha_acquire_hardware();
+     esp_sha_block(ctx->mode, data, ctx->first_block);
+@@ -147,7 +147,7 @@ int mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned
+ /*
+  * SHA-512 process buffer
+  */
+-int mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *input,
++int esp_mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *input,
+                                size_t ilen )
+ {
+     int ret;
+@@ -233,7 +233,7 @@ static const unsigned char sha512_padding[128] = {
+ /*
+  * SHA-512 final digest
+  */
+-int mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
++int esp_mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
+ {
+     int ret;
+     size_t last, padn;
+@@ -250,11 +250,11 @@ int mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
+     last = (size_t)( ctx->total[0] & 0x7F );
+     padn = ( last < 112 ) ? ( 112 - last ) : ( 240 - last );
+ 
+-    if ( ( ret = mbedtls_sha512_update( ctx, sha512_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha512_update( ctx, sha512_padding, padn ) ) != 0 ) {
+         return ret;
+     }
+ 
+-    if ( ( ret = mbedtls_sha512_update( ctx, msglen, 16 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha512_update( ctx, msglen, 16 ) ) != 0 ) {
+         return ret;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/dma/esp_sha1.c b/components/mbedtls/port/sha/dma/esp_sha1.c
+index 2ca05ea1445d14bd629fb2c4312c478626629b0b..889b886de9b685f939cb0bb3fb0839948cd11550 100644
+--- a/components/mbedtls/port/sha/dma/esp_sha1.c
++++ b/components/mbedtls/port/sha/dma/esp_sha1.c
+@@ -26,7 +26,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -55,12 +55,12 @@ static void mbedtls_zeroize( void *v, size_t n )
+ }
+ #endif
+ 
+-void mbedtls_sha1_init( mbedtls_sha1_context *ctx )
++void esp_mbedtls_sha1_init( mbedtls_sha1_context *ctx )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha1_context ) );
+ }
+ 
+-void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
++void esp_mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -68,7 +68,7 @@ void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha1_context ) );
+ }
+ 
+-void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
++void esp_mbedtls_sha1_clone( mbedtls_sha1_context *dst,
+                          const mbedtls_sha1_context *src )
+ {
+     memcpy(dst, src, sizeof(mbedtls_sha1_context));
+@@ -77,7 +77,7 @@ void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
+ /*
+  * SHA-1 context setup
+  */
+-int mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
++int esp_mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
+ {
+     ctx->total[0] = 0;
+     ctx->total[1] = 0;
+@@ -96,7 +96,7 @@ static int esp_internal_sha1_dma_process(mbedtls_sha1_context *ctx,
+     return esp_sha_dma(SHA1, data, len, buf, buf_len, ctx->first_block);
+ }
+ 
+-int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
++int esp_mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
+ {
+     int ret;
+     esp_sha_acquire_hardware();
+@@ -105,7 +105,7 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned cha
+     return ret;
+ }
+ 
+-int mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
++int esp_mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
+ {
+     int ret;
+     size_t fill;
+@@ -176,7 +176,7 @@ static const unsigned char sha1_padding[64] = {
+ /*
+ * SHA-1 final digest
+  */
+-int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
++int esp_mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+ {
+     int ret;
+     uint32_t last, padn;
+@@ -194,10 +194,10 @@ int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+ 
+ 
+-    if ( ( ret = mbedtls_sha1_update( ctx, sha1_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha1_update( ctx, sha1_padding, padn ) ) != 0 ) {
+         return ret;
+     }
+-    if ( ( ret = mbedtls_sha1_update( ctx, msglen, 8 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha1_update( ctx, msglen, 8 ) ) != 0 ) {
+         return ret;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/dma/esp_sha256.c b/components/mbedtls/port/sha/dma/esp_sha256.c
+index 7246bf6b2239aa7358cac8fe54b0cc586e532a8b..b04498bc5e6dc1fe0145ca712ab7485aff68c6d1 100644
+--- a/components/mbedtls/port/sha/dma/esp_sha256.c
++++ b/components/mbedtls/port/sha/dma/esp_sha256.c
+@@ -26,7 +26,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -64,12 +64,12 @@ do {                                                    \
+ } while( 0 )
+ #endif
+ 
+-void mbedtls_sha256_init( mbedtls_sha256_context *ctx )
++void esp_mbedtls_sha256_init( mbedtls_sha256_context *ctx )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha256_context ) );
+ }
+ 
+-void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
++void esp_mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -78,7 +78,7 @@ void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha256_context ) );
+ }
+ 
+-void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
++void esp_mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+                            const mbedtls_sha256_context *src )
+ {
+     *dst = *src;
+@@ -87,7 +87,7 @@ void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+ /*
+  * SHA-256 context setup
+  */
+-int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
++int esp_mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha256_context ) );
+ 
+@@ -100,7 +100,7 @@ int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
+     return 0;
+ }
+ 
+-int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
++int esp_mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
+ {
+     int ret;
+     esp_sha_acquire_hardware();
+@@ -113,7 +113,7 @@ int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned
+ /*
+  * SHA-256 process buffer
+  */
+-int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input,
++int esp_mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input,
+                                size_t ilen )
+ {
+     int ret = 0;
+@@ -185,7 +185,7 @@ static const unsigned char sha256_padding[64] = {
+ /*
+  * SHA-256 final digest
+  */
+-int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
++int esp_mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+ {
+     int ret;
+     uint32_t last, padn;
+@@ -202,11 +202,11 @@ int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+     last = ctx->total[0] & 0x3F;
+     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+ 
+-    if ( ( ret = mbedtls_sha256_update( ctx, sha256_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha256_update( ctx, sha256_padding, padn ) ) != 0 ) {
+         return ret;
+     }
+ 
+-    if ( ( ret = mbedtls_sha256_update( ctx, msglen, 8 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha256_update( ctx, msglen, 8 ) ) != 0 ) {
+         return ret;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/dma/esp_sha512.c b/components/mbedtls/port/sha/dma/esp_sha512.c
+index cc813f268579c226403e130dbd2448ff8a048b78..9caf0b0b8d7bc0cbddf90e7515bf03cfbe19b727 100644
+--- a/components/mbedtls/port/sha/dma/esp_sha512.c
++++ b/components/mbedtls/port/sha/dma/esp_sha512.c
+@@ -32,7 +32,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -86,12 +86,12 @@ void esp_sha512_set_t( mbedtls_sha512_context *ctx, uint16_t t_val)
+     ctx->t_val = t_val;
+ }
+ 
+-void mbedtls_sha512_init( mbedtls_sha512_context *ctx )
++void esp_mbedtls_sha512_init( mbedtls_sha512_context *ctx )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha512_context ) );
+ }
+ 
+-void mbedtls_sha512_free( mbedtls_sha512_context *ctx )
++void esp_mbedtls_sha512_free( mbedtls_sha512_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -100,7 +100,7 @@ void mbedtls_sha512_free( mbedtls_sha512_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha512_context ) );
+ }
+ 
+-void mbedtls_sha512_clone( mbedtls_sha512_context *dst,
++void esp_mbedtls_sha512_clone( mbedtls_sha512_context *dst,
+                            const mbedtls_sha512_context *src )
+ {
+     memcpy(dst, src, sizeof(mbedtls_sha512_context));
+@@ -109,7 +109,7 @@ void mbedtls_sha512_clone( mbedtls_sha512_context *dst,
+ /*
+  * SHA-512 context setup
+  */
+-int mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
++int esp_mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
+ {
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha512_context ) );
+ 
+@@ -133,7 +133,7 @@ static int esp_internal_sha512_dma_process(mbedtls_sha512_context *ctx,
+ 
+ }
+ 
+-int mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
++int esp_mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
+ {
+     int ret;
+     esp_sha_acquire_hardware();
+@@ -147,7 +147,7 @@ int mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned
+ /*
+  * SHA-512 process buffer
+  */
+-int mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *input,
++int esp_mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *input,
+                                size_t ilen )
+ {
+     int ret;
+@@ -231,7 +231,7 @@ static const unsigned char sha512_padding[128] = {
+ /*
+  * SHA-512 final digest
+  */
+-int mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
++int esp_mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
+ {
+     int ret;
+     size_t last, padn;
+@@ -248,11 +248,11 @@ int mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
+     last = (size_t)( ctx->total[0] & 0x7F );
+     padn = ( last < 112 ) ? ( 112 - last ) : ( 240 - last );
+ 
+-    if ( ( ret = mbedtls_sha512_update( ctx, sha512_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha512_update( ctx, sha512_padding, padn ) ) != 0 ) {
+         return ret;
+     }
+ 
+-    if ( ( ret = mbedtls_sha512_update( ctx, msglen, 16 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha512_update( ctx, msglen, 16 ) ) != 0 ) {
+         return ret;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/esp_sha.c b/components/mbedtls/port/sha/esp_sha.c
+index 4648e4afc2cbbf8b3c81d6581fb5a3e49112d924..1e8c99e43d57b688f8f24381240dcfcbb5608550 100644
+--- a/components/mbedtls/port/sha/esp_sha.c
++++ b/components/mbedtls/port/sha/esp_sha.c
+@@ -44,52 +44,52 @@ void esp_sha(esp_sha_type sha_type, const unsigned char *input, size_t ilen, uns
+ 
+ #if SOC_SHA_SUPPORT_SHA1
+     if (sha_type == SHA1) {
+-        mbedtls_sha1_init(&ctx.sha1);
+-        mbedtls_sha1_starts(&ctx.sha1);
+-        ret = mbedtls_sha1_update(&ctx.sha1, input, ilen);
++        esp_mbedtls_sha1_init(&ctx.sha1);
++        esp_mbedtls_sha1_starts(&ctx.sha1);
++        ret = esp_mbedtls_sha1_update(&ctx.sha1, input, ilen);
+         assert(ret == 0);
+-        ret = mbedtls_sha1_finish(&ctx.sha1, output);
++        ret = esp_mbedtls_sha1_finish(&ctx.sha1, output);
+         assert(ret == 0);
+-        mbedtls_sha1_free(&ctx.sha1);
++        esp_mbedtls_sha1_free(&ctx.sha1);
+         return;
+     }
+ #endif //SOC_SHA_SUPPORT_SHA1
+ 
+ #if SOC_SHA_SUPPORT_SHA256
+     if (sha_type == SHA2_256) {
+-        mbedtls_sha256_init(&ctx.sha256);
+-        mbedtls_sha256_starts(&ctx.sha256, 0);
+-        ret = mbedtls_sha256_update(&ctx.sha256, input, ilen);
++        esp_mbedtls_sha256_init(&ctx.sha256);
++        esp_mbedtls_sha256_starts(&ctx.sha256, 0);
++        ret = esp_mbedtls_sha256_update(&ctx.sha256, input, ilen);
+         assert(ret == 0);
+-        ret = mbedtls_sha256_finish(&ctx.sha256, output);
++        ret = esp_mbedtls_sha256_finish(&ctx.sha256, output);
+         assert(ret == 0);
+-        mbedtls_sha256_free(&ctx.sha256);
++        esp_mbedtls_sha256_free(&ctx.sha256);
+         return;
+     }
+ #endif //SOC_SHA_SUPPORT_SHA256
+ 
+ #if SOC_SHA_SUPPORT_SHA384
+     if (sha_type == SHA2_384) {
+-        mbedtls_sha512_init(&ctx.sha512);
+-        mbedtls_sha512_starts(&ctx.sha512, 1);
+-        ret = mbedtls_sha512_update(&ctx.sha512, input, ilen);
++        esp_mbedtls_sha512_init(&ctx.sha512);
++        esp_mbedtls_sha512_starts(&ctx.sha512, 1);
++        ret = esp_mbedtls_sha512_update(&ctx.sha512, input, ilen);
+         assert(ret == 0);
+-        ret = mbedtls_sha512_finish(&ctx.sha512, output);
++        ret = esp_mbedtls_sha512_finish(&ctx.sha512, output);
+         assert(ret == 0);
+-        mbedtls_sha512_free(&ctx.sha512);
++        esp_mbedtls_sha512_free(&ctx.sha512);
+         return;
+     }
+ #endif //SOC_SHA_SUPPORT_SHA384
+ 
+ #if SOC_SHA_SUPPORT_SHA512
+     if (sha_type == SHA2_512) {
+-        mbedtls_sha512_init(&ctx.sha512);
+-        mbedtls_sha512_starts(&ctx.sha512, 0);
+-        ret = mbedtls_sha512_update(&ctx.sha512, input, ilen);
++        esp_mbedtls_sha512_init(&ctx.sha512);
++        esp_mbedtls_sha512_starts(&ctx.sha512, 0);
++        ret = esp_mbedtls_sha512_update(&ctx.sha512, input, ilen);
+         assert(ret == 0);
+-        ret = mbedtls_sha512_finish(&ctx.sha512, output);
++        ret = esp_mbedtls_sha512_finish(&ctx.sha512, output);
+         assert(ret == 0);
+-        mbedtls_sha512_free(&ctx.sha512);
++        esp_mbedtls_sha512_free(&ctx.sha512);
+         return;
+     }
+ #endif //SOC_SHA_SUPPORT_SHA512
+diff --git a/components/mbedtls/port/sha/parallel_engine/esp_sha1.c b/components/mbedtls/port/sha/parallel_engine/esp_sha1.c
+index b6a2c7abe802f09ed11f232d8bcb21c6adf2e699..1067f6d7cb8d561dfbed8c4e535f88eb993fefcc 100644
+--- a/components/mbedtls/port/sha/parallel_engine/esp_sha1.c
++++ b/components/mbedtls/port/sha/parallel_engine/esp_sha1.c
+@@ -28,7 +28,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -66,12 +66,12 @@ static void mbedtls_zeroize( void *v, size_t n )
+ }
+ #endif
+ 
+-void mbedtls_sha1_init( mbedtls_sha1_context *ctx )
++void esp_mbedtls_sha1_init( mbedtls_sha1_context *ctx )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha1_context ) );
+ }
+ 
+-void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
++void esp_mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -83,7 +83,7 @@ void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha1_context ) );
+ }
+ 
+-void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
++void esp_mbedtls_sha1_clone( mbedtls_sha1_context *dst,
+                          const mbedtls_sha1_context *src )
+ {
+     *dst = *src;
+@@ -101,7 +101,7 @@ void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
+ /*
+  * SHA-1 context setup
+  */
+-int mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
++int esp_mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
+ {
+     ctx->total[0] = 0;
+     ctx->total[1] = 0;
+@@ -123,7 +123,7 @@ int mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
+ 
+ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsigned char data[64] );
+ 
+-int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
++int esp_mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
+ {
+     bool first_block = false;
+     if (ctx->mode == ESP_MBEDTLS_SHA1_UNUSED) {
+@@ -177,7 +177,7 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+ 
+ #define P(a,b,c,d,e,x)                                  \
+ {                                                       \
+-    e += S(a,5) + F(b,c,d) + K + x; b = S(b,30);        \
++    e += S(a,5) + F(b,c,d) + esp_K + x; b = S(b,30);        \
+ }
+ 
+     A = ctx->state[0];
+@@ -187,7 +187,7 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+     E = ctx->state[4];
+ 
+ #define F(x,y,z) (z ^ (x & (y ^ z)))
+-#define K 0x5A827999
++#define esp_K 0x5A827999
+ 
+     P( A, B, C, D, E, W[0]  );
+     P( E, A, B, C, D, W[1]  );
+@@ -210,11 +210,11 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+     P( C, D, E, A, B, R(18) );
+     P( B, C, D, E, A, R(19) );
+ 
+-#undef K
++#undef esp_K
+ #undef F
+ 
+ #define F(x,y,z) (x ^ y ^ z)
+-#define K 0x6ED9EBA1
++#define esp_K 0x6ED9EBA1
+ 
+     P( A, B, C, D, E, R(20) );
+     P( E, A, B, C, D, R(21) );
+@@ -237,11 +237,11 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+     P( C, D, E, A, B, R(38) );
+     P( B, C, D, E, A, R(39) );
+ 
+-#undef K
++#undef esp_K
+ #undef F
+ 
+ #define F(x,y,z) ((x & y) | (z & (x | y)))
+-#define K 0x8F1BBCDC
++#define esp_K 0x8F1BBCDC
+ 
+     P( A, B, C, D, E, R(40) );
+     P( E, A, B, C, D, R(41) );
+@@ -264,11 +264,11 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+     P( C, D, E, A, B, R(58) );
+     P( B, C, D, E, A, R(59) );
+ 
+-#undef K
++#undef esp_K
+ #undef F
+ 
+ #define F(x,y,z) (x ^ y ^ z)
+-#define K 0xCA62C1D6
++#define esp_K 0xCA62C1D6
+ 
+     P( A, B, C, D, E, R(60) );
+     P( E, A, B, C, D, R(61) );
+@@ -291,7 +291,7 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+     P( C, D, E, A, B, R(78) );
+     P( B, C, D, E, A, R(79) );
+ 
+-#undef K
++#undef esp_K
+ #undef F
+ 
+     ctx->state[0] += A;
+@@ -304,7 +304,7 @@ static void mbedtls_sha1_software_process( mbedtls_sha1_context *ctx, const unsi
+ /*
+  * SHA-1 process buffer
+  */
+-int mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
++int esp_mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
+ {
+     int ret;
+     size_t fill;
+@@ -327,7 +327,7 @@ int mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input,
+     if ( left && ilen >= fill ) {
+         memcpy( (void *) (ctx->buffer + left), input, fill );
+ 
+-        if ( ( ret = mbedtls_internal_sha1_process( ctx, ctx->buffer ) ) != 0 ) {
++        if ( ( ret = esp_mbedtls_internal_sha1_process( ctx, ctx->buffer ) ) != 0 ) {
+             return ret;
+         }
+ 
+@@ -337,7 +337,7 @@ int mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input,
+     }
+ 
+     while ( ilen >= 64 ) {
+-        if ( ( ret = mbedtls_internal_sha1_process( ctx, input ) ) != 0 ) {
++        if ( ( ret = esp_mbedtls_internal_sha1_process( ctx, input ) ) != 0 ) {
+             return ret;
+         }
+ 
+@@ -362,7 +362,7 @@ static const unsigned char sha1_padding[64] = {
+ /*
+ * SHA-1 final digest
+  */
+-int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
++int esp_mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+ {
+     int ret;
+     uint32_t last, padn;
+@@ -379,10 +379,10 @@ int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+     last = ctx->total[0] & 0x3F;
+     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+ 
+-    if ( ( ret = mbedtls_sha1_update( ctx, sha1_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha1_update( ctx, sha1_padding, padn ) ) != 0 ) {
+         goto out;
+     }
+-    if ( ( ret = mbedtls_sha1_update( ctx, msglen, 8 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha1_update( ctx, msglen, 8 ) ) != 0 ) {
+         goto out;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/parallel_engine/esp_sha256.c b/components/mbedtls/port/sha/parallel_engine/esp_sha256.c
+index 311a5f241cf08bd7da19f2fb06117c95d9519fe1..5e7db025e81b70046daad1171233ad4c744c722b 100644
+--- a/components/mbedtls/port/sha/parallel_engine/esp_sha256.c
++++ b/components/mbedtls/port/sha/parallel_engine/esp_sha256.c
+@@ -28,7 +28,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -66,12 +66,12 @@ do {                                                    \
+ } while( 0 )
+ #endif
+ 
+-void mbedtls_sha256_init( mbedtls_sha256_context *ctx )
++void esp_mbedtls_sha256_init( mbedtls_sha256_context *ctx )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha256_context ) );
+ }
+ 
+-void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
++void esp_mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -83,7 +83,7 @@ void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha256_context ) );
+ }
+ 
+-void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
++void esp_mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+                            const mbedtls_sha256_context *src )
+ {
+     *dst = *src;
+@@ -100,7 +100,7 @@ void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+ /*
+  * SHA-256 context setup
+  */
+-int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
++int esp_mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
+ {
+     ctx->total[0] = 0;
+     ctx->total[1] = 0;
+@@ -135,7 +135,7 @@ int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
+     return 0;
+ }
+ 
+-static const uint32_t K[] = {
++static const uint32_t esp_K[] = {
+     0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
+     0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
+     0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3,
+@@ -172,16 +172,16 @@ static const uint32_t K[] = {
+            S0(W[t - 15]) + W[t - 16]            \
+ )
+ 
+-#define P(a,b,c,d,e,f,g,h,x,K)                  \
++#define P(a,b,c,d,e,f,g,h,x,esp_K)                  \
+ {                                               \
+-    temp1 = h + S3(e) + F1(e,f,g) + K + x;      \
++    temp1 = h + S3(e) + F1(e,f,g) + esp_K + x;      \
+     temp2 = S2(a) + F0(a,b,c);                  \
+     d += temp1; h = temp1 + temp2;              \
+ }
+ 
+ static void mbedtls_sha256_software_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
+ 
+-int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
++int esp_mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
+ {
+     bool first_block = false;
+ 
+@@ -222,7 +222,7 @@ static void mbedtls_sha256_software_process( mbedtls_sha256_context *ctx, const
+             R( i );
+         }
+ 
+-        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i], K[i] );
++        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i], esp_K[i] );
+ 
+         temp1 = A[7]; A[7] = A[6]; A[6] = A[5]; A[5] = A[4]; A[4] = A[3];
+         A[3] = A[2]; A[2] = A[1]; A[1] = A[0]; A[0] = temp1;
+@@ -233,25 +233,25 @@ static void mbedtls_sha256_software_process( mbedtls_sha256_context *ctx, const
+     }
+ 
+     for ( i = 0; i < 16; i += 8 ) {
+-        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i + 0], K[i + 0] );
+-        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], W[i + 1], K[i + 1] );
+-        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], W[i + 2], K[i + 2] );
+-        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], W[i + 3], K[i + 3] );
+-        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], W[i + 4], K[i + 4] );
+-        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], W[i + 5], K[i + 5] );
+-        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], W[i + 6], K[i + 6] );
+-        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], W[i + 7], K[i + 7] );
++        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i + 0], esp_K[i + 0] );
++        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], W[i + 1], esp_K[i + 1] );
++        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], W[i + 2], esp_K[i + 2] );
++        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], W[i + 3], esp_K[i + 3] );
++        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], W[i + 4], esp_K[i + 4] );
++        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], W[i + 5], esp_K[i + 5] );
++        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], W[i + 6], esp_K[i + 6] );
++        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], W[i + 7], esp_K[i + 7] );
+     }
+ 
+     for ( i = 16; i < 64; i += 8 ) {
+-        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], R(i + 0), K[i + 0] );
+-        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], R(i + 1), K[i + 1] );
+-        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], R(i + 2), K[i + 2] );
+-        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], R(i + 3), K[i + 3] );
+-        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], R(i + 4), K[i + 4] );
+-        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], R(i + 5), K[i + 5] );
+-        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], R(i + 6), K[i + 6] );
+-        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], R(i + 7), K[i + 7] );
++        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], R(i + 0), esp_K[i + 0] );
++        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], R(i + 1), esp_K[i + 1] );
++        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], R(i + 2), esp_K[i + 2] );
++        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], R(i + 3), esp_K[i + 3] );
++        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], R(i + 4), esp_K[i + 4] );
++        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], R(i + 5), esp_K[i + 5] );
++        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], R(i + 6), esp_K[i + 6] );
++        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], R(i + 7), esp_K[i + 7] );
+     }
+ #endif /* MBEDTLS_SHA256_SMALLER */
+ 
+@@ -263,7 +263,7 @@ static void mbedtls_sha256_software_process( mbedtls_sha256_context *ctx, const
+ /*
+  * SHA-256 process buffer
+  */
+-int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input,
++int esp_mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input,
+                                size_t ilen )
+ {
+     int ret;
+@@ -287,7 +287,7 @@ int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *inp
+     if ( left && ilen >= fill ) {
+         memcpy( (void *) (ctx->buffer + left), input, fill );
+ 
+-        if ( ( ret = mbedtls_internal_sha256_process( ctx, ctx->buffer ) ) != 0 ) {
++        if ( ( ret = esp_mbedtls_internal_sha256_process( ctx, ctx->buffer ) ) != 0 ) {
+             return ret;
+         }
+ 
+@@ -297,7 +297,7 @@ int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *inp
+     }
+ 
+     while ( ilen >= 64 ) {
+-        if ( ( ret = mbedtls_internal_sha256_process( ctx, input ) ) != 0 ) {
++        if ( ( ret = esp_mbedtls_internal_sha256_process( ctx, input ) ) != 0 ) {
+             return ret;
+         }
+ 
+@@ -322,7 +322,7 @@ static const unsigned char sha256_padding[64] = {
+ /*
+  * SHA-256 final digest
+  */
+-int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
++int esp_mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+ {
+     int ret;
+     uint32_t last, padn;
+@@ -339,11 +339,11 @@ int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+     last = ctx->total[0] & 0x3F;
+     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+ 
+-    if ( ( ret = mbedtls_sha256_update( ctx, sha256_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha256_update( ctx, sha256_padding, padn ) ) != 0 ) {
+         goto out;
+     }
+ 
+-    if ( ( ret = mbedtls_sha256_update( ctx, msglen, 8 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha256_update( ctx, msglen, 8 ) ) != 0 ) {
+         goto out;
+     }
+ 
+diff --git a/components/mbedtls/port/sha/parallel_engine/esp_sha512.c b/components/mbedtls/port/sha/parallel_engine/esp_sha512.c
+index 8e7562f1177ea8b0cba2f4059f081ff96fa38a3c..a66d00dc8e6ad97a718b31ca94a31cd5e7d56e31 100644
+--- a/components/mbedtls/port/sha/parallel_engine/esp_sha512.c
++++ b/components/mbedtls/port/sha/parallel_engine/esp_sha512.c
+@@ -34,7 +34,7 @@
+ #include "mbedtls/platform.h"
+ #else
+ #include <stdio.h>
+-#define mbedtls_printf printf
++#define esp_mbedtls_printf printf
+ #endif /* MBEDTLS_PLATFORM_C */
+ #endif /* MBEDTLS_SELF_TEST */
+ 
+@@ -85,12 +85,12 @@ static void mbedtls_zeroize( void *v, size_t n )
+ }
+ #endif /* PUT_UINT64_BE */
+ 
+-void mbedtls_sha512_init( mbedtls_sha512_context *ctx )
++void esp_mbedtls_sha512_init( mbedtls_sha512_context *ctx )
+ {
+     memset( ctx, 0, sizeof( mbedtls_sha512_context ) );
+ }
+ 
+-void mbedtls_sha512_free( mbedtls_sha512_context *ctx )
++void esp_mbedtls_sha512_free( mbedtls_sha512_context *ctx )
+ {
+     if ( ctx == NULL ) {
+         return;
+@@ -102,7 +102,7 @@ void mbedtls_sha512_free( mbedtls_sha512_context *ctx )
+     mbedtls_zeroize( ctx, sizeof( mbedtls_sha512_context ) );
+ }
+ 
+-void mbedtls_sha512_clone( mbedtls_sha512_context *dst,
++void esp_mbedtls_sha512_clone( mbedtls_sha512_context *dst,
+                            const mbedtls_sha512_context *src )
+ {
+     *dst = *src;
+@@ -124,7 +124,7 @@ void mbedtls_sha512_clone( mbedtls_sha512_context *dst,
+ /*
+  * SHA-512 context setup
+  */
+-int mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
++int esp_mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
+ {
+     ctx->total[0] = 0;
+     ctx->total[1] = 0;
+@@ -163,7 +163,7 @@ int mbedtls_sha512_starts( mbedtls_sha512_context *ctx, int is384 )
+ /*
+  * Round constants
+  */
+-static const uint64_t K[80] = {
++static const uint64_t esp_K[80] = {
+     UL64(0x428A2F98D728AE22),  UL64(0x7137449123EF65CD),
+     UL64(0xB5C0FBCFEC4D3B2F),  UL64(0xE9B5DBA58189DBBC),
+     UL64(0x3956C25BF348B538),  UL64(0x59F111F1B605D019),
+@@ -208,7 +208,7 @@ static const uint64_t K[80] = {
+ 
+ static void mbedtls_sha512_software_process( mbedtls_sha512_context *ctx, const unsigned char data[128] );
+ 
+-int mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
++int esp_mbedtls_internal_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
+ {
+     bool first_block = false;
+ 
+@@ -249,9 +249,9 @@ static void mbedtls_sha512_software_process( mbedtls_sha512_context *ctx, const
+ #define F0(x,y,z) ((x & y) | (z & (x | y)))
+ #define F1(x,y,z) (z ^ (x & (y ^ z)))
+ 
+-#define P(a,b,c,d,e,f,g,h,x,K)                  \
++#define P(a,b,c,d,e,f,g,h,x,esp_K)                  \
+ {                                               \
+-    temp1 = h + S3(e) + F1(e,f,g) + K + x;      \
++    temp1 = h + S3(e) + F1(e,f,g) + esp_K + x;      \
+     temp2 = S2(a) + F0(a,b,c);                  \
+     d += temp1; h = temp1 + temp2;              \
+ }
+@@ -276,14 +276,14 @@ static void mbedtls_sha512_software_process( mbedtls_sha512_context *ctx, const
+     i = 0;
+ 
+     do {
+-        P( A, B, C, D, E, F, G, H, W[i], K[i] ); i++;
+-        P( H, A, B, C, D, E, F, G, W[i], K[i] ); i++;
+-        P( G, H, A, B, C, D, E, F, W[i], K[i] ); i++;
+-        P( F, G, H, A, B, C, D, E, W[i], K[i] ); i++;
+-        P( E, F, G, H, A, B, C, D, W[i], K[i] ); i++;
+-        P( D, E, F, G, H, A, B, C, W[i], K[i] ); i++;
+-        P( C, D, E, F, G, H, A, B, W[i], K[i] ); i++;
+-        P( B, C, D, E, F, G, H, A, W[i], K[i] ); i++;
++        P( A, B, C, D, E, F, G, H, W[i], esp_K[i] ); i++;
++        P( H, A, B, C, D, E, F, G, W[i], esp_K[i] ); i++;
++        P( G, H, A, B, C, D, E, F, W[i], esp_K[i] ); i++;
++        P( F, G, H, A, B, C, D, E, W[i], esp_K[i] ); i++;
++        P( E, F, G, H, A, B, C, D, W[i], esp_K[i] ); i++;
++        P( D, E, F, G, H, A, B, C, W[i], esp_K[i] ); i++;
++        P( C, D, E, F, G, H, A, B, W[i], esp_K[i] ); i++;
++        P( B, C, D, E, F, G, H, A, W[i], esp_K[i] ); i++;
+     } while ( i < 80 );
+ 
+     ctx->state[0] += A;
+@@ -299,7 +299,7 @@ static void mbedtls_sha512_software_process( mbedtls_sha512_context *ctx, const
+ /*
+  * SHA-512 process buffer
+  */
+-int mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *input,
++int esp_mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *input,
+                                size_t ilen )
+ {
+     int ret;
+@@ -321,7 +321,7 @@ int mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *inp
+ 
+     if ( left && ilen >= fill ) {
+         memcpy( (void *) (ctx->buffer + left), input, fill );
+-        if ( ( ret = mbedtls_internal_sha512_process( ctx, ctx->buffer ) ) != 0 ) {
++        if ( ( ret = esp_mbedtls_internal_sha512_process( ctx, ctx->buffer ) ) != 0 ) {
+             return ret;
+         }
+ 
+@@ -331,7 +331,7 @@ int mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *inp
+     }
+ 
+     while ( ilen >= 128 ) {
+-        if ( ( ret = mbedtls_internal_sha512_process( ctx, input ) ) != 0 ) {
++        if ( ( ret = esp_mbedtls_internal_sha512_process( ctx, input ) ) != 0 ) {
+             return ret;
+         }
+ 
+@@ -360,7 +360,7 @@ static const unsigned char sha512_padding[128] = {
+ /*
+  * SHA-512 final digest
+  */
+-int mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
++int esp_mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
+ {
+     int ret;
+     size_t last, padn;
+@@ -377,11 +377,11 @@ int mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
+     last = (size_t)( ctx->total[0] & 0x7F );
+     padn = ( last < 112 ) ? ( 112 - last ) : ( 240 - last );
+ 
+-    if ( ( ret = mbedtls_sha512_update( ctx, sha512_padding, padn ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha512_update( ctx, sha512_padding, padn ) ) != 0 ) {
+         goto out;
+     }
+ 
+-    if ( ( ret = mbedtls_sha512_update( ctx, msglen, 16 ) ) != 0 ) {
++    if ( ( ret = esp_mbedtls_sha512_update( ctx, msglen, 16 ) ) != 0 ) {
+         goto out;
+     }
+ 

@@ -1,0 +1,102 @@
+diff --git a/components/esp_event/include/esp_event.h b/components/esp_event/include/esp_event.h
+index 47e21ca9663f0fc48a3e1ad60dcafaa9091ecb58..c1d120003fe091f5e28cfe5826544a8a069d9cab 100644
+--- a/components/esp_event/include/esp_event.h
++++ b/components/esp_event/include/esp_event.h
+@@ -9,11 +9,6 @@
+ 
+ #include "esp_err.h"
+ 
+-#include "freertos/FreeRTOS.h"
+-#include "freertos/task.h"
+-#include "freertos/queue.h"
+-#include "freertos/semphr.h"
+-
+ #include "esp_event_base.h"
+ 
+ #ifdef __cplusplus
+@@ -369,7 +364,7 @@ esp_err_t esp_event_handler_instance_unregister(esp_event_base_t event_base,
+  */
+ esp_err_t esp_event_post(esp_event_base_t event_base,
+                          int32_t event_id,
+-                         const void *event_data,
++                         void *event_data,
+                          size_t event_data_size,
+                          TickType_t ticks_to_wait);
+ 
+diff --git a/components/esp_rom/include/esp32s3/rom/ets_sys.h b/components/esp_rom/include/esp32s3/rom/ets_sys.h
+index edf9627c68f11db9ef8ded928da6adc3f139df2c..3f736595bf99e3e5efe910f578a483312c2aa0e1 100644
+--- a/components/esp_rom/include/esp32s3/rom/ets_sys.h
++++ b/components/esp_rom/include/esp32s3/rom/ets_sys.h
+@@ -638,8 +638,7 @@ void intr_matrix_set(int cpu_no, uint32_t model_num, uint32_t intr_num);
+ #define ETS_MEM_BAR() asm volatile ( "" : : : "memory" )
+ 
+ typedef enum {
+-    OK = 0,
+-    FAIL,
++    FAIL = 1,
+     PENDING,
+     BUSY,
+     CANCEL,
+diff --git a/components/esp_system/include/esp_system.h b/components/esp_system/include/esp_system.h
+index fea13af97dd865ec6afb446f304622fa1d72f063..a2fae021e774ff0eb43e64c14be1d3d0e1ef589e 100644
+--- a/components/esp_system/include/esp_system.h
++++ b/components/esp_system/include/esp_system.h
+@@ -10,7 +10,6 @@
+ #include <stdint.h>
+ #include <stdbool.h>
+ #include "esp_err.h"
+-#include "esp_attr.h"
+ #include "esp_bit_defs.h"
+ #include "esp_idf_version.h"
+ 
+diff --git a/components/esp_wifi/include/esp_private/esp_wifi_private.h b/components/esp_wifi/include/esp_private/esp_wifi_private.h
+index 1b95905a061ba8c0960207859673f0ae3a8aeb6c..fa8fb16312e13eaaf007aaddcba2338a154eaba7 100644
+--- a/components/esp_wifi/include/esp_private/esp_wifi_private.h
++++ b/components/esp_wifi/include/esp_private/esp_wifi_private.h
+@@ -6,8 +6,6 @@
+ #ifndef _ESP_WIFI_PRIVATE_H
+ #define _ESP_WIFI_PRIVATE_H
+ 
+-#include "freertos/FreeRTOS.h"
+-#include "freertos/queue.h"
+ #include "sys/queue.h"
+ #include "sdkconfig.h"
+ #include "esp_wifi_crypto_types.h"
+diff --git a/components/esp_wifi/include/esp_private/wifi.h b/components/esp_wifi/include/esp_private/wifi.h
+index b3f7342a0cf2c411ec63c0b7b35b918e7ad2c461..b3c0c93b38e9987f5020e919ddbb3d4529ed4d9c 100644
+--- a/components/esp_wifi/include/esp_private/wifi.h
++++ b/components/esp_wifi/include/esp_private/wifi.h
+@@ -21,8 +21,6 @@
+ 
+ #include <stdint.h>
+ #include <stdbool.h>
+-#include "freertos/FreeRTOS.h"
+-#include "freertos/queue.h"
+ #include "sys/queue.h"
+ #include "esp_err.h"
+ #include "esp_wifi_types.h"
+diff --git a/components/esp_wifi/include/esp_wifi_default.h b/components/esp_wifi/include/esp_wifi_default.h
+index 79a176bfc0289e98bad654e43946b7ccfe6645a8..90ad44b660b52e5163f441830ca31f8eee5c9ec5 100644
+--- a/components/esp_wifi/include/esp_wifi_default.h
++++ b/components/esp_wifi/include/esp_wifi_default.h
+@@ -7,8 +7,6 @@
+ #ifndef _ESP_WIFI_DEFAULT_H
+ #define _ESP_WIFI_DEFAULT_H
+ 
+-#include "esp_netif.h"
+-
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+diff --git a/components/nvs_flash/include/nvs.h b/components/nvs_flash/include/nvs.h
+index 966c16de69e08836be16f8e2dc487b93d597398f..ab99ee3f2c40f8f31f90dce05c5dd952acc04cc8 100644
+--- a/components/nvs_flash/include/nvs.h
++++ b/components/nvs_flash/include/nvs.h
+@@ -9,7 +9,6 @@
+ #include <stdint.h>
+ #include <stddef.h>
+ #include <stdbool.h>
+-#include "esp_attr.h"
+ #include "esp_err.h"
+ 
+ #ifdef __cplusplus
