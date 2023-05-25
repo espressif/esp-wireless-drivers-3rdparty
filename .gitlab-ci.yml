@@ -1,0 +1,14 @@
+stages:
+  - sync
+
+sync_from_idf:
+  image: $CI_DOCKER_REGISTRY/esp-env-v5.1:1
+  stage: sync
+  tags:
+    - build
+  variables:
+    ESP_WIRELESS_URL: ${CI_ESP_WIRELESS_URL}
+    IDF_URL: ${CI_IDF_URL}
+  script:
+    - pip install git-filter-repo
+    - tools/extract_idf_components.sh
