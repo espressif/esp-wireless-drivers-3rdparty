@@ -77,13 +77,13 @@ MSG_CALLBACK="
         return re.sub(br'espressif/esp-idf([^\]])', br'[ESP_IDF]\1', msg1)
     "
 ARG="${LIC_ARG} $(get_arg_by_components esp_event esp_phy esp_wifi mbedtls wpa_supplicant)"
-# extract_components "release/v5.0" "sync-1-release_v5.0" ${ARG} --message-callback "${MSG_CALLBACK}"
+extract_components "release/v5.0" "sync-1-release_v5.0" ${ARG} --message-callback "${MSG_CALLBACK}"
 
 # Add new one here if you have new requirement
 
 # Push to protected branch will cause that branch to appear on Github.
 # Try with non-protected branch first.
 # ARG="${LIC_ARG} $(get_arg_by_components esp_event esp_phy esp_wifi mbedtls wpa_supplicant)"
-extract_components "release/v5.0" "test-sync-1-release_v5.0" ${ARG} --message-callback "${MSG_CALLBACK}"
+# extract_components "release/v5.0" "test-sync-1-release_v5.0" ${ARG} --message-callback "${MSG_CALLBACK}"
 
 ############## Deprecated Syncs ###################
