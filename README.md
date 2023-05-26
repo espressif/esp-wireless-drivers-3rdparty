@@ -18,7 +18,7 @@ Where:
 
 ## Existing branches
 
-- [`test-sync-1-release_v5.0`](../../tree/test-sync-1-release_v5.0):
+- [`sync-1-release_v5.0`](../../tree/sync-1-release_v5.0):
     - Based on IDF `release/v5.0` branch.
     - Includes components: `esp_event`, `esp_phy`, `esp_wifi`, `mbedtls`, `wpa_supplicant`.
 ## Restrictions
