@@ -21,6 +21,10 @@ Where:
 - [`sync-1-release_v5.0`](../../tree/sync-1-release_v5.0):
     - Based on IDF `release/v5.0` branch.
     - Includes components: `esp_event`, `esp_phy`, `esp_wifi`, `mbedtls`, `wpa_supplicant`.
+- [`sync-2-release_v5.0`](../../tree/sync-2-release_v5.0):
+    - Based on IDF `release/v5.0` branch.
+    - Includes components: `esp_common`, `esp_event`,`esp_hw_support`, `esp_phy`, `esp_rom`, `esp_system`,`esp_timer`, `esp_wifi`, `mbedtls`, `soc`, `wpa_supplicant`
+
 ## Restrictions
 
 1. Sync branches don't have common ancestors

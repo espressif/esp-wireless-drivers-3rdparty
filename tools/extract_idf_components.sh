@@ -76,8 +76,12 @@ MSG_CALLBACK="
         # espressif/esp-idf -> [ESP_IDF] (except from [Github: espressif/esp-idf])
         return re.sub(br'espressif/esp-idf([^\]])', br'[ESP_IDF]\1', msg1)
     "
+
 ARG="${LIC_ARG} $(get_arg_by_components esp_event esp_phy esp_wifi mbedtls wpa_supplicant)"
 extract_components "release/v5.0" "sync-1-release_v5.0" ${ARG} --message-callback "${MSG_CALLBACK}"
+
+ARG="${LIC_ARG} $(get_arg_by_components esp_common esp_event esp_hw_support esp_phy esp_rom esp_system esp_timer esp_wifi mbedtls soc wpa_supplicant)"
+extract_components "release/v5.0" "sync-2-release_v5.0" ${ARG} --message-callback "${MSG_CALLBACK}"
 
 # Add new one here if you have new requirement
 
