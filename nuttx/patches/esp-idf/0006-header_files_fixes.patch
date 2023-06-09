@@ -1,3 +1,16 @@
+diff --git a/components/bt/include/esp32s3/include/esp_bt.h b/components/bt/include/esp32s3/include/esp_bt.h
+index ff02cf00d0a2dfdc0047b57fd30e0ef514e9041c..250736ec71d33f0b5a59e5d88602cea3e76194eb 100644
+--- a/components/bt/include/esp32s3/include/esp_bt.h
++++ b/components/bt/include/esp32s3/include/esp_bt.h
+@@ -11,7 +11,6 @@
+ #include <stdbool.h>
+ #include "esp_err.h"
+ #include "sdkconfig.h"
+-#include "esp_task.h"
+ #include "esp_assert.h"
+ 
+ #ifdef __cplusplus
+ 
 diff --git a/components/esp_event/include/esp_event.h b/components/esp_event/include/esp_event.h
 index 47e21ca9663f0fc48a3e1ad60dcafaa9091ecb58..c1d120003fe091f5e28cfe5826544a8a069d9cab 100644
 --- a/components/esp_event/include/esp_event.h
