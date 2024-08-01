@@ -1,0 +1,109 @@
+diff --git a/include/mbedtls/ecp.h b/include/mbedtls/ecp.h
+index ecfd18e5f2c857c5aba9d3e7a3c935d6af818680..32d8dde7ae2fbaadb6fa5e04ab3841dfebac9a8e 100644
+--- a/include/mbedtls/ecp.h
++++ b/include/mbedtls/ecp.h
+@@ -779,7 +779,7 @@ int esp_mbedtls_ecp_point_write_binary(const mbedtls_ecp_group *grp,
+  * \brief           This function imports a point from unsigned binary data.
+  *
+  * \note            This function does not check that the point actually
+- *                  belongs to the given group, see mbedtls_ecp_check_pubkey()
++ *                  belongs to the given group, see esp_mbedtls_ecp_check_pubkey()
+  *                  for that.
+  *
+  * \note            For compressed points, see #MBEDTLS_ECP_PF_COMPRESSED for
+@@ -1137,7 +1137,7 @@ int esp_mbedtls_ecp_muladd_restartable(
+  *                  a valid public key for the given curve.
+  * \return          Another negative error code on other kinds of failure.
+  */
+-int mbedtls_ecp_check_pubkey(const mbedtls_ecp_group *grp,
++int esp_mbedtls_ecp_check_pubkey(const mbedtls_ecp_group *grp,
+                              const mbedtls_ecp_point *pt);
+ 
+ /**
+@@ -1263,7 +1263,7 @@ int esp_mbedtls_ecp_gen_key(mbedtls_ecp_group_id grp_id, mbedtls_ecp_keypair *ke
+ /** \brief          Set the public key in a key pair object.
+  *
+  * \note            This function does not check that the point actually
+- *                  belongs to the given group. Call mbedtls_ecp_check_pubkey()
++ *                  belongs to the given group. Call esp_mbedtls_ecp_check_pubkey()
+  *                  on \p Q before calling this function to check that.
+  *
+  * \note            This function does not check that the public key matches
+diff --git a/library/bignum.c b/library/bignum.c
+index 7d15b057288ce3d860518b1762d6384db15fa572..533323aeaf670ca252956a2c87a674afffa2327a 100644
+--- a/library/bignum.c
++++ b/library/bignum.c
+@@ -1622,7 +1622,7 @@ int esp_mbedtls_mpi_exp_mod(mbedtls_mpi *X, const mbedtls_mpi *A,
+                         const mbedtls_mpi *E, const mbedtls_mpi *N,
+                         mbedtls_mpi *prec_RR)
+ #else
+-int mbedtls_mpi_exp_mod_soft(mbedtls_mpi *X, const mbedtls_mpi *A,
++int esp_mbedtls_mpi_exp_mod_soft(mbedtls_mpi *X, const mbedtls_mpi *A,
+                         const mbedtls_mpi *E, const mbedtls_mpi *N,
+                         mbedtls_mpi *prec_RR)
+ #endif
+diff --git a/library/ecp.c b/library/ecp.c
+index 5daac407461a9d5302378ebe3fbf431c617f596d..c8b5cbdb8f4e05010d606060411de1afa53384ee 100644
+--- a/library/ecp.c
++++ b/library/ecp.c
+@@ -2674,7 +2674,7 @@ static int ecp_mul_restartable_internal(mbedtls_ecp_group *grp, mbedtls_ecp_poin
+ 
+         /* Common sanity checks */
+         MBEDTLS_MPI_CHK(esp_mbedtls_ecp_check_privkey(grp, m));
+-        MBEDTLS_MPI_CHK(mbedtls_ecp_check_pubkey(grp, P));
++        MBEDTLS_MPI_CHK(esp_mbedtls_ecp_check_pubkey(grp, P));
+     }
+ 
+     ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+@@ -2793,13 +2793,13 @@ static int esp_mbedtls_ecp_mul_shortcuts(mbedtls_ecp_group *grp,
+     esp_mbedtls_mpi_init(&tmp);
+ 
+     if (esp_mbedtls_mpi_cmp_int(m, 0) == 0) {
+-        MBEDTLS_MPI_CHK(mbedtls_ecp_check_pubkey(grp, P));
++        MBEDTLS_MPI_CHK(esp_mbedtls_ecp_check_pubkey(grp, P));
+         MBEDTLS_MPI_CHK(esp_mbedtls_ecp_set_zero(R));
+     } else if (esp_mbedtls_mpi_cmp_int(m, 1) == 0) {
+-        MBEDTLS_MPI_CHK(mbedtls_ecp_check_pubkey(grp, P));
++        MBEDTLS_MPI_CHK(esp_mbedtls_ecp_check_pubkey(grp, P));
+         MBEDTLS_MPI_CHK(esp_mbedtls_ecp_copy(R, P));
+     } else if (esp_mbedtls_mpi_cmp_int(m, -1) == 0) {
+-        MBEDTLS_MPI_CHK(mbedtls_ecp_check_pubkey(grp, P));
++        MBEDTLS_MPI_CHK(esp_mbedtls_ecp_check_pubkey(grp, P));
+         MBEDTLS_MPI_CHK(esp_mbedtls_ecp_copy(R, P));
+         MPI_ECP_NEG(&R->Y);
+     } else {
+@@ -3053,7 +3053,7 @@ static int esp_ecp_check_pubkey_mx(const mbedtls_ecp_group *grp, const mbedtls_e
+ int esp_mbedtls_ecp_check_pubkey_soft(const mbedtls_ecp_group *grp,
+                                 const mbedtls_ecp_point *pt)
+ #else
+-int mbedtls_ecp_check_pubkey(const mbedtls_ecp_group *grp,
++int esp_mbedtls_ecp_check_pubkey(const mbedtls_ecp_group *grp,
+                              const mbedtls_ecp_point *pt)
+ #endif
+ {
+diff --git a/library/pk_ecc.c b/library/pk_ecc.c
+index bc6582b8228a75ba2180760446c9dc43b0cb85df..d7f0006eccf2f53ccfb3b30f48ceec6c8c7f1e5f 100644
+--- a/library/pk_ecc.c
++++ b/library/pk_ecc.c
+@@ -247,7 +247,7 @@ int esp_mbedtls_pk_ecc_set_pubkey(mbedtls_pk_context *pk, const unsigned char *p
+     if (ret != 0) {
+         return ret;
+     }
+-    return mbedtls_ecp_check_pubkey(&ec_key->grp, &ec_key->Q);
++    return esp_mbedtls_ecp_check_pubkey(&ec_key->grp, &ec_key->Q);
+ 
+ #endif /* MBEDTLS_PK_USE_PSA_EC_DATA */
+ }
+diff --git a/library/psa_crypto_ecp.c b/library/psa_crypto_ecp.c
+index 94c9fa0f7c332b7860754527429bc26b011395f5..56b115173d49d5656556ff5a5c4ad5b6f423723e 100644
+--- a/library/psa_crypto_ecp.c
++++ b/library/psa_crypto_ecp.c
+@@ -169,7 +169,7 @@ psa_status_t esp_mbedtls_psa_ecp_load_representation(
+ 
+         /* Check that the point is on the curve. */
+         status = esp_mbedtls_to_psa_error(
+-            mbedtls_ecp_check_pubkey(&ecp->grp, &ecp->Q));
++            esp_mbedtls_ecp_check_pubkey(&ecp->grp, &ecp->Q));
+         if (status != PSA_SUCCESS) {
+             goto exit;
+         }

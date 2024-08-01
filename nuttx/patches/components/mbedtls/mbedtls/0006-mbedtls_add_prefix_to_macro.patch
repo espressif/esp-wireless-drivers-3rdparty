@@ -1,0 +1,829 @@
+diff --git a/include/mbedtls/oid.h b/include/mbedtls/oid.h
+index 288b884b1af95b01ba9ca54efcec791abfb6af51..e7c24cd52f394a31d29dcbc0bc790e7317c57e1a 100644
+--- a/include/mbedtls/oid.h
++++ b/include/mbedtls/oid.h
+@@ -493,7 +493,7 @@ typedef struct mbedtls_oid_descriptor_t {
+  * \return          Length of the string written (excluding final NULL) or
+  *                  MBEDTLS_ERR_OID_BUF_TOO_SMALL in case of error
+  */
+-int mbedtls_oid_get_numeric_string(char *buf, size_t size, const mbedtls_asn1_buf *oid);
++int esp_mbedtls_oid_get_numeric_string(char *buf, size_t size, const mbedtls_asn1_buf *oid);
+ 
+ /**
+  * \brief           Translate a string containing a dotted-decimal
+@@ -522,7 +522,7 @@ int esp_mbedtls_oid_from_numeric_string(mbedtls_asn1_buf *oid, const char *oid_s
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_x509_ext_type(const mbedtls_asn1_buf *oid, int *ext_type);
++int esp_mbedtls_oid_get_x509_ext_type(const mbedtls_asn1_buf *oid, int *ext_type);
+ 
+ /**
+  * \brief          Translate an X.509 attribute type OID into the short name
+@@ -533,7 +533,7 @@ int mbedtls_oid_get_x509_ext_type(const mbedtls_asn1_buf *oid, int *ext_type);
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_attr_short_name(const mbedtls_asn1_buf *oid, const char **short_name);
++int esp_mbedtls_oid_get_attr_short_name(const mbedtls_asn1_buf *oid, const char **short_name);
+ 
+ /**
+  * \brief          Translate PublicKeyAlgorithm OID into pk_type
+@@ -543,7 +543,7 @@ int mbedtls_oid_get_attr_short_name(const mbedtls_asn1_buf *oid, const char **sh
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_pk_alg(const mbedtls_asn1_buf *oid, mbedtls_pk_type_t *pk_alg);
++int esp_mbedtls_oid_get_pk_alg(const mbedtls_asn1_buf *oid, mbedtls_pk_type_t *pk_alg);
+ 
+ /**
+  * \brief          Translate pk_type into PublicKeyAlgorithm OID
+@@ -554,7 +554,7 @@ int mbedtls_oid_get_pk_alg(const mbedtls_asn1_buf *oid, mbedtls_pk_type_t *pk_al
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_oid_by_pk_alg(mbedtls_pk_type_t pk_alg,
++int esp_mbedtls_oid_get_oid_by_pk_alg(mbedtls_pk_type_t pk_alg,
+                                   const char **oid, size_t *olen);
+ 
+ #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
+@@ -566,7 +566,7 @@ int mbedtls_oid_get_oid_by_pk_alg(mbedtls_pk_type_t pk_alg,
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_ec_grp(const mbedtls_asn1_buf *oid, mbedtls_ecp_group_id *grp_id);
++int esp_mbedtls_oid_get_ec_grp(const mbedtls_asn1_buf *oid, mbedtls_ecp_group_id *grp_id);
+ 
+ /**
+  * \brief          Translate EC group identifier into NamedCurve OID
+@@ -577,7 +577,7 @@ int mbedtls_oid_get_ec_grp(const mbedtls_asn1_buf *oid, mbedtls_ecp_group_id *gr
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_oid_by_ec_grp(mbedtls_ecp_group_id grp_id,
++int esp_mbedtls_oid_get_oid_by_ec_grp(mbedtls_ecp_group_id grp_id,
+                                   const char **oid, size_t *olen);
+ 
+ /**
+@@ -589,7 +589,7 @@ int mbedtls_oid_get_oid_by_ec_grp(mbedtls_ecp_group_id grp_id,
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_ec_grp_algid(const mbedtls_asn1_buf *oid, mbedtls_ecp_group_id *grp_id);
++int esp_mbedtls_oid_get_ec_grp_algid(const mbedtls_asn1_buf *oid, mbedtls_ecp_group_id *grp_id);
+ 
+ /**
+  * \brief          Translate EC group identifier into AlgorithmIdentifier OID,
+@@ -601,7 +601,7 @@ int mbedtls_oid_get_ec_grp_algid(const mbedtls_asn1_buf *oid, mbedtls_ecp_group_
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_oid_by_ec_grp_algid(mbedtls_ecp_group_id grp_id,
++int esp_mbedtls_oid_get_oid_by_ec_grp_algid(mbedtls_ecp_group_id grp_id,
+                                         const char **oid, size_t *olen);
+ #endif /* MBEDTLS_PK_HAVE_ECC_KEYS */
+ 
+@@ -614,7 +614,7 @@ int mbedtls_oid_get_oid_by_ec_grp_algid(mbedtls_ecp_group_id grp_id,
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_sig_alg(const mbedtls_asn1_buf *oid,
++int esp_mbedtls_oid_get_sig_alg(const mbedtls_asn1_buf *oid,
+                             mbedtls_md_type_t *md_alg, mbedtls_pk_type_t *pk_alg);
+ 
+ /**
+@@ -625,7 +625,7 @@ int mbedtls_oid_get_sig_alg(const mbedtls_asn1_buf *oid,
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_sig_alg_desc(const mbedtls_asn1_buf *oid, const char **desc);
++int esp_mbedtls_oid_get_sig_alg_desc(const mbedtls_asn1_buf *oid, const char **desc);
+ 
+ /**
+  * \brief          Translate md_type and pk_type into SignatureAlgorithm OID
+@@ -637,7 +637,7 @@ int mbedtls_oid_get_sig_alg_desc(const mbedtls_asn1_buf *oid, const char **desc)
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_oid_by_sig_alg(mbedtls_pk_type_t pk_alg, mbedtls_md_type_t md_alg,
++int esp_mbedtls_oid_get_oid_by_sig_alg(mbedtls_pk_type_t pk_alg, mbedtls_md_type_t md_alg,
+                                    const char **oid, size_t *olen);
+ 
+ /**
+@@ -648,7 +648,7 @@ int mbedtls_oid_get_oid_by_sig_alg(mbedtls_pk_type_t pk_alg, mbedtls_md_type_t m
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_md_hmac(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_hmac);
++int esp_mbedtls_oid_get_md_hmac(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_hmac);
+ 
+ /**
+  * \brief          Translate hash algorithm OID into md_type
+@@ -658,7 +658,7 @@ int mbedtls_oid_get_md_hmac(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_h
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_md_alg(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_alg);
++int esp_mbedtls_oid_get_md_alg(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_alg);
+ 
+ #if !defined(MBEDTLS_X509_REMOVE_INFO)
+ /**
+@@ -669,7 +669,7 @@ int mbedtls_oid_get_md_alg(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_al
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_extended_key_usage(const mbedtls_asn1_buf *oid, const char **desc);
++int esp_mbedtls_oid_get_extended_key_usage(const mbedtls_asn1_buf *oid, const char **desc);
+ #endif
+ 
+ /**
+@@ -680,7 +680,7 @@ int mbedtls_oid_get_extended_key_usage(const mbedtls_asn1_buf *oid, const char *
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_certificate_policies(const mbedtls_asn1_buf *oid, const char **desc);
++int esp_mbedtls_oid_get_certificate_policies(const mbedtls_asn1_buf *oid, const char **desc);
+ 
+ /**
+  * \brief          Translate md_type into hash algorithm OID
+@@ -691,7 +691,7 @@ int mbedtls_oid_get_certificate_policies(const mbedtls_asn1_buf *oid, const char
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_oid_by_md(mbedtls_md_type_t md_alg, const char **oid, size_t *olen);
++int esp_mbedtls_oid_get_oid_by_md(mbedtls_md_type_t md_alg, const char **oid, size_t *olen);
+ 
+ #if defined(MBEDTLS_CIPHER_C)
+ /**
+@@ -702,7 +702,7 @@ int mbedtls_oid_get_oid_by_md(mbedtls_md_type_t md_alg, const char **oid, size_t
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_cipher_alg(const mbedtls_asn1_buf *oid, mbedtls_cipher_type_t *cipher_alg);
++int esp_mbedtls_oid_get_cipher_alg(const mbedtls_asn1_buf *oid, mbedtls_cipher_type_t *cipher_alg);
+ 
+ #if defined(MBEDTLS_PKCS12_C)
+ /**
+@@ -715,7 +715,7 @@ int mbedtls_oid_get_cipher_alg(const mbedtls_asn1_buf *oid, mbedtls_cipher_type_
+  *
+  * \return         0 if successful, or MBEDTLS_ERR_OID_NOT_FOUND
+  */
+-int mbedtls_oid_get_pkcs12_pbe_alg(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_alg,
++int esp_mbedtls_oid_get_pkcs12_pbe_alg(const mbedtls_asn1_buf *oid, mbedtls_md_type_t *md_alg,
+                                    mbedtls_cipher_type_t *cipher_alg);
+ #endif /* MBEDTLS_PKCS12_C */
+ #endif /* MBEDTLS_CIPHER_C */
+diff --git a/include/mbedtls/ssl.h b/include/mbedtls/ssl.h
+index aa2d15886c50c7ae3a343c3226c71e4b5d1b7d85..b3297bf0ef93b8aa4f9f57f267132cd28f914c7c 100644
+--- a/include/mbedtls/ssl.h
++++ b/include/mbedtls/ssl.h
+@@ -976,7 +976,7 @@ typedef int mbedtls_ssl_cache_set_t(void *data,
+  *                    encoding, treating \p hash as the hash to be encoded and
+  *                    padded. In other words, apply EMSA-PKCS1-v1_5 starting
+  *                    from step 2, with `digestAlgorithm` obtained by calling
+- *                    mbedtls_oid_get_oid_by_md() on \p md_alg.
++ *                    esp_mbedtls_oid_get_oid_by_md() on \p md_alg.
+  *
+  * \note            For ECDSA signatures, the output format is the DER encoding
+  *                  `Ecdsa-Sig-Value` defined in
+diff --git a/library/oid.c b/library/oid.c
+index 22c262552a0f3df33de74726c93db64c74c88e2f..32336071afa9698d76765b3be687c723afa37e99 100644
+--- a/library/oid.c
++++ b/library/oid.c
+@@ -42,7 +42,7 @@
+  * the other functions)
+  */
+ #define esp_FN_OID_TYPED_FROM_ASN1(TYPE_T, NAME, LIST)                    \
+-    static const TYPE_T *oid_ ## NAME ## _from_asn1(                   \
++    static const TYPE_T *esp_oid_ ## NAME ## _from_asn1(                   \
+         const mbedtls_asn1_buf *oid)     \
+     {                                                                   \
+         const TYPE_T *p = (LIST);                                       \
+@@ -68,7 +68,7 @@
+ #define FN_OID_GET_DESCRIPTOR_ATTR1(FN_NAME, TYPE_T, TYPE_NAME, ATTR1_TYPE, ATTR1) \
+     int FN_NAME(const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1)                  \
+     {                                                                       \
+-        const TYPE_T *data = oid_ ## TYPE_NAME ## _from_asn1(oid);        \
++        const TYPE_T *data = esp_oid_ ## TYPE_NAME ## _from_asn1(oid);        \
+         if (data == NULL) return MBEDTLS_ERR_OID_NOT_FOUND;            \
+         *ATTR1 = data->descriptor.ATTR1;                                    \
+         return 0;                                                        \
+@@ -82,7 +82,7 @@
+ #define FN_OID_GET_ATTR1(FN_NAME, TYPE_T, TYPE_NAME, ATTR1_TYPE, ATTR1) \
+     int FN_NAME(const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1)                  \
+     {                                                                       \
+-        const TYPE_T *data = oid_ ## TYPE_NAME ## _from_asn1(oid);        \
++        const TYPE_T *data = esp_oid_ ## TYPE_NAME ## _from_asn1(oid);        \
+         if (data == NULL) return MBEDTLS_ERR_OID_NOT_FOUND;            \
+         *ATTR1 = data->ATTR1;                                               \
+         return 0;                                                        \
+@@ -97,7 +97,7 @@
+     int FN_NAME(const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1,               \
+                 ATTR2_TYPE * ATTR2)              \
+     {                                                                           \
+-        const TYPE_T *data = oid_ ## TYPE_NAME ## _from_asn1(oid);            \
++        const TYPE_T *data = esp_oid_ ## TYPE_NAME ## _from_asn1(oid);            \
+         if (data == NULL) return MBEDTLS_ERR_OID_NOT_FOUND;                 \
+         *(ATTR1) = data->ATTR1;                                                 \
+         *(ATTR2) = data->ATTR2;                                                 \
+@@ -256,7 +256,7 @@ static const oid_x520_attr_t esp_oid_x520_attr_type[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_x520_attr_t, x520_attr, esp_oid_x520_attr_type)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_attr_short_name,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_attr_short_name,
+                  oid_x520_attr_t,
+                  x520_attr,
+                  const char *,
+@@ -325,7 +325,7 @@ static const oid_x509_ext_t esp_oid_x509_ext[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_x509_ext_t, x509_ext, esp_oid_x509_ext)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_x509_ext_type, oid_x509_ext_t, x509_ext, int, ext_type)
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_x509_ext_type, oid_x509_ext_t, x509_ext, int, ext_type)
+ 
+ #if !defined(MBEDTLS_X509_REMOVE_INFO)
+ static const mbedtls_oid_descriptor_t oid_ext_key_usage[] =
+@@ -347,7 +347,7 @@ static const mbedtls_oid_descriptor_t oid_ext_key_usage[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(mbedtls_oid_descriptor_t, ext_key_usage, oid_ext_key_usage)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_extended_key_usage,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_extended_key_usage,
+                  mbedtls_oid_descriptor_t,
+                  ext_key_usage,
+                  const char *,
+@@ -360,7 +360,7 @@ static const mbedtls_oid_descriptor_t oid_certificate_policies[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(mbedtls_oid_descriptor_t, certificate_policies, oid_certificate_policies)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_certificate_policies,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_certificate_policies,
+                  mbedtls_oid_descriptor_t,
+                  certificate_policies,
+                  const char *,
+@@ -473,21 +473,21 @@ static const oid_sig_alg_t esp_oid_sig_alg[] =
+ esp_FN_OID_TYPED_FROM_ASN1(oid_sig_alg_t, sig_alg, esp_oid_sig_alg)
+ 
+ #if !defined(MBEDTLS_X509_REMOVE_INFO)
+-FN_OID_GET_DESCRIPTOR_ATTR1(mbedtls_oid_get_sig_alg_desc,
++FN_OID_GET_DESCRIPTOR_ATTR1(esp_mbedtls_oid_get_sig_alg_desc,
+                             oid_sig_alg_t,
+                             sig_alg,
+                             const char *,
+                             description)
+ #endif
+ 
+-FN_OID_GET_ATTR2(mbedtls_oid_get_sig_alg,
++FN_OID_GET_ATTR2(esp_mbedtls_oid_get_sig_alg,
+                  oid_sig_alg_t,
+                  sig_alg,
+                  mbedtls_md_type_t,
+                  md_alg,
+                  mbedtls_pk_type_t,
+                  pk_alg)
+-FN_OID_GET_OID_BY_ATTR2(mbedtls_oid_get_oid_by_sig_alg,
++FN_OID_GET_OID_BY_ATTR2(esp_mbedtls_oid_get_oid_by_sig_alg,
+                         oid_sig_alg_t,
+                         esp_oid_sig_alg,
+                         mbedtls_pk_type_t,
+@@ -524,8 +524,8 @@ static const oid_pk_alg_t esp_oid_pk_alg[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_pk_alg_t, pk_alg, esp_oid_pk_alg)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_pk_alg, oid_pk_alg_t, pk_alg, mbedtls_pk_type_t, pk_alg)
+-FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_pk_alg,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_pk_alg, oid_pk_alg_t, pk_alg, mbedtls_pk_type_t, pk_alg)
++FN_OID_GET_OID_BY_ATTR1(esp_mbedtls_oid_get_oid_by_pk_alg,
+                         oid_pk_alg_t,
+                         esp_oid_pk_alg,
+                         mbedtls_pk_type_t,
+@@ -615,8 +615,8 @@ static const oid_ecp_grp_t esp_oid_ecp_grp[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_ecp_grp_t, grp_id, esp_oid_ecp_grp)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_ec_grp, oid_ecp_grp_t, grp_id, mbedtls_ecp_group_id, grp_id)
+-FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_ec_grp,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_ec_grp, oid_ecp_grp_t, grp_id, mbedtls_ecp_group_id, grp_id)
++FN_OID_GET_OID_BY_ATTR1(esp_mbedtls_oid_get_oid_by_ec_grp,
+                         oid_ecp_grp_t,
+                         esp_oid_ecp_grp,
+                         mbedtls_ecp_group_id,
+@@ -652,12 +652,12 @@ static const oid_ecp_grp_algid_t esp_oid_ecp_grp_algid[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_ecp_grp_algid_t, grp_id_algid, esp_oid_ecp_grp_algid)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_ec_grp_algid,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_ec_grp_algid,
+                  oid_ecp_grp_algid_t,
+                  grp_id_algid,
+                  mbedtls_ecp_group_id,
+                  grp_id)
+-FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_ec_grp_algid,
++FN_OID_GET_OID_BY_ATTR1(esp_mbedtls_oid_get_oid_by_ec_grp_algid,
+                         oid_ecp_grp_algid_t,
+                         esp_oid_ecp_grp_algid,
+                         mbedtls_ecp_group_id,
+@@ -702,7 +702,7 @@ static const oid_cipher_alg_t esp_oid_cipher_alg[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_cipher_alg_t, cipher_alg, esp_oid_cipher_alg)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_cipher_alg,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_cipher_alg,
+                  oid_cipher_alg_t,
+                  cipher_alg,
+                  mbedtls_cipher_type_t,
+@@ -792,8 +792,8 @@ static const oid_md_alg_t esp_oid_md_alg[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_md_alg_t, md_alg, esp_oid_md_alg)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_md_alg, oid_md_alg_t, md_alg, mbedtls_md_type_t, md_alg)
+-FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_md,
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_md_alg, oid_md_alg_t, md_alg, mbedtls_md_type_t, md_alg)
++FN_OID_GET_OID_BY_ATTR1(esp_mbedtls_oid_get_oid_by_md,
+                         oid_md_alg_t,
+                         esp_oid_md_alg,
+                         mbedtls_md_type_t,
+@@ -876,7 +876,7 @@ static const oid_md_hmac_t esp_oid_md_hmac[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_md_hmac_t, md_hmac, esp_oid_md_hmac)
+-FN_OID_GET_ATTR1(mbedtls_oid_get_md_hmac, oid_md_hmac_t, md_hmac, mbedtls_md_type_t, md_hmac)
++FN_OID_GET_ATTR1(esp_mbedtls_oid_get_md_hmac, oid_md_hmac_t, md_hmac, mbedtls_md_type_t, md_hmac)
+ 
+ #if defined(MBEDTLS_PKCS12_C) && defined(MBEDTLS_CIPHER_C)
+ /*
+@@ -909,7 +909,7 @@ static const oid_pkcs12_pbe_alg_t esp_oid_pkcs12_pbe_alg[] =
+ };
+ 
+ esp_FN_OID_TYPED_FROM_ASN1(oid_pkcs12_pbe_alg_t, pkcs12_pbe_alg, esp_oid_pkcs12_pbe_alg)
+-FN_OID_GET_ATTR2(mbedtls_oid_get_pkcs12_pbe_alg,
++FN_OID_GET_ATTR2(esp_mbedtls_oid_get_pkcs12_pbe_alg,
+                  oid_pkcs12_pbe_alg_t,
+                  pkcs12_pbe_alg,
+                  mbedtls_md_type_t,
+@@ -919,7 +919,7 @@ FN_OID_GET_ATTR2(mbedtls_oid_get_pkcs12_pbe_alg,
+ #endif /* MBEDTLS_PKCS12_C && MBEDTLS_CIPHER_C */
+ 
+ /* Return the x.y.z.... style numeric string for the given OID */
+-int mbedtls_oid_get_numeric_string(char *buf, size_t size,
++int esp_mbedtls_oid_get_numeric_string(char *buf, size_t size,
+                                    const mbedtls_asn1_buf *oid)
+ {
+     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+diff --git a/library/pkcs5.c b/library/pkcs5.c
+index c6c89d06472f75dcb4a7ff27dff9097326302546..d238fe2028ef54919f9da31a0b1759ea9216a269 100644
+--- a/library/pkcs5.c
++++ b/library/pkcs5.c
+@@ -89,7 +89,7 @@ static int esp_pkcs5_parse_pbkdf2_params(const mbedtls_asn1_buf *params,
+         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PKCS5_INVALID_FORMAT, ret);
+     }
+ 
+-    if (mbedtls_oid_get_md_hmac(&prf_alg_oid, md_type) != 0) {
++    if (esp_mbedtls_oid_get_md_hmac(&prf_alg_oid, md_type) != 0) {
+         return MBEDTLS_ERR_PKCS5_FEATURE_UNAVAILABLE;
+     }
+ 
+@@ -179,7 +179,7 @@ int esp_mbedtls_pkcs5_pbes2_ext(const mbedtls_asn1_buf *pbe_params, int mode,
+         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PKCS5_INVALID_FORMAT, ret);
+     }
+ 
+-    if (mbedtls_oid_get_cipher_alg(&enc_scheme_oid, &cipher_alg) != 0) {
++    if (esp_mbedtls_oid_get_cipher_alg(&enc_scheme_oid, &cipher_alg) != 0) {
+         return MBEDTLS_ERR_PKCS5_FEATURE_UNAVAILABLE;
+     }
+ 
+diff --git a/library/pkcs7.c b/library/pkcs7.c
+index 7221987b865e5e069422bb59f90895dae0dc1f7f..24e72fd74ba494e2ecdafbbfe5840aef66649d87 100644
+--- a/library/pkcs7.c
++++ b/library/pkcs7.c
+@@ -482,7 +482,7 @@ static int esp_pkcs7_get_signed_data(unsigned char *buf, size_t buflen,
+         return ret;
+     }
+ 
+-    ret = mbedtls_oid_get_md_alg(&signed_data->digest_alg_identifiers, &md_alg);
++    ret = esp_mbedtls_oid_get_md_alg(&signed_data->digest_alg_identifiers, &md_alg);
+     if (ret != 0) {
+         return MBEDTLS_ERR_PKCS7_INVALID_ALG;
+     }
+@@ -661,7 +661,7 @@ static int esp_mbedtls_pkcs7_data_or_hash_verify(mbedtls_pkcs7 *pkcs7,
+         return MBEDTLS_ERR_PKCS7_CERT_DATE_INVALID;
+     }
+ 
+-    ret = mbedtls_oid_get_md_alg(&pkcs7->signed_data.digest_alg_identifiers, &md_alg);
++    ret = esp_mbedtls_oid_get_md_alg(&pkcs7->signed_data.digest_alg_identifiers, &md_alg);
+     if (ret != 0) {
+         return ret;
+     }
+diff --git a/library/pkparse.c b/library/pkparse.c
+index 034295cbfd325b1f30a7237a472da0d2a0e9ea1e..ec95b6bb01c0bf8bfcf82bbd38fc30a1ec1e3578 100644
+--- a/library/pkparse.c
++++ b/library/pkparse.c
+@@ -392,7 +392,7 @@ static int esp_pk_use_ecparams(const mbedtls_asn1_buf *params, mbedtls_pk_contex
+     mbedtls_ecp_group_id grp_id;
+ 
+     if (params->tag == MBEDTLS_ASN1_OID) {
+-        if (mbedtls_oid_get_ec_grp(params, &grp_id) != 0) {
++        if (esp_mbedtls_oid_get_ec_grp(params, &grp_id) != 0) {
+             return MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE;
+         }
+     } else {
+@@ -482,10 +482,10 @@ static int esp_pk_get_pk_alg(unsigned char **p,
+         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PK_INVALID_ALG, ret);
+     }
+ 
+-    ret = mbedtls_oid_get_pk_alg(&alg_oid, pk_alg);
++    ret = esp_mbedtls_oid_get_pk_alg(&alg_oid, pk_alg);
+ #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
+     if (ret == MBEDTLS_ERR_OID_NOT_FOUND) {
+-        ret = mbedtls_oid_get_ec_grp_algid(&alg_oid, ec_grp_id);
++        ret = esp_mbedtls_oid_get_ec_grp_algid(&alg_oid, ec_grp_id);
+         if (ret == 0) {
+             *pk_alg = MBEDTLS_PK_ECKEY;
+         }
+@@ -922,7 +922,7 @@ MBEDTLS_STATIC_TESTABLE int esp_mbedtls_pk_parse_key_pkcs8_encrypted_der(
+      * Decrypt EncryptedData with appropriate PBE
+      */
+ #if defined(MBEDTLS_PKCS12_C) && defined(MBEDTLS_CIPHER_PADDING_PKCS7) && defined(MBEDTLS_CIPHER_C)
+-    if (mbedtls_oid_get_pkcs12_pbe_alg(&pbe_alg_oid, &md_alg, &cipher_alg) == 0) {
++    if (esp_mbedtls_oid_get_pkcs12_pbe_alg(&pbe_alg_oid, &md_alg, &cipher_alg) == 0) {
+         if ((ret = esp_mbedtls_pkcs12_pbe_ext(&pbe_params, MBEDTLS_PKCS12_PBE_DECRYPT,
+                                           cipher_alg, md_alg,
+                                           pwd, pwdlen, p, len, buf, len, &outlen)) != 0) {
+diff --git a/library/pkwrite.c b/library/pkwrite.c
+index 5668146429bf9d011a096b1da1ed2f22535cdc32..c8640513fd96b69115dc3c38f5691a30f3c92233 100644
+--- a/library/pkwrite.c
++++ b/library/pkwrite.c
+@@ -227,7 +227,7 @@ static int esp_pk_write_ec_param(unsigned char **p, unsigned char *start,
+     const char *oid;
+     size_t oid_len;
+ 
+-    if ((ret = mbedtls_oid_get_oid_by_ec_grp(grp_id, &oid, &oid_len)) != 0) {
++    if ((ret = esp_mbedtls_oid_get_oid_by_ec_grp(grp_id, &oid, &oid_len)) != 0) {
+         return ret;
+     }
+ 
+@@ -268,7 +268,7 @@ static int esp_pk_write_ec_rfc8410_der(unsigned char **p, unsigned char *buf,
+ 
+     grp_id = esp_mbedtls_pk_get_ec_group_id(pk);
+     /* privateKeyAlgorithm */
+-    if ((ret = mbedtls_oid_get_oid_by_ec_grp_algid(grp_id, &oid, &oid_len)) != 0) {
++    if ((ret = esp_mbedtls_oid_get_oid_by_ec_grp_algid(grp_id, &oid, &oid_len)) != 0) {
+         return ret;
+     }
+     MBEDTLS_ASN1_CHK_ADD(len,
+@@ -472,7 +472,7 @@ int esp_mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char
+     if (esp_pk_get_type_ext(key) == MBEDTLS_PK_ECKEY) {
+         mbedtls_ecp_group_id ec_grp_id = esp_mbedtls_pk_get_ec_group_id(key);
+         if (MBEDTLS_PK_IS_RFC8410_GROUP_ID(ec_grp_id)) {
+-            ret = mbedtls_oid_get_oid_by_ec_grp_algid(ec_grp_id, &oid, &oid_len);
++            ret = esp_mbedtls_oid_get_oid_by_ec_grp_algid(ec_grp_id, &oid, &oid_len);
+             if (ret != 0) {
+                 return ret;
+             }
+@@ -485,7 +485,7 @@ int esp_mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char
+ 
+     /* At this point oid_len is not null only for EC Montgomery keys. */
+     if (oid_len == 0) {
+-        ret = mbedtls_oid_get_oid_by_pk_alg(pk_type, &oid, &oid_len);
++        ret = esp_mbedtls_oid_get_oid_by_pk_alg(pk_type, &oid, &oid_len);
+         if (ret != 0) {
+             return ret;
+         }
+diff --git a/library/rsa.c b/library/rsa.c
+index 4e6e0d2873350f14a31fab6a60d9f4b5f3e521f8..8a5d66389ebf42de877e57af2c5d512018185cce 100644
+--- a/library/rsa.c
++++ b/library/rsa.c
+@@ -2323,7 +2323,7 @@ static int esp_rsa_rsassa_pkcs1_v15_encode(mbedtls_md_type_t md_alg,
+             return MBEDTLS_ERR_RSA_BAD_INPUT_DATA;
+         }
+ 
+-        if (mbedtls_oid_get_oid_by_md(md_alg, &oid, &oid_size) != 0) {
++        if (esp_mbedtls_oid_get_oid_by_md(md_alg, &oid, &oid_size) != 0) {
+             return MBEDTLS_ERR_RSA_BAD_INPUT_DATA;
+         }
+ 
+diff --git a/library/x509.c b/library/x509.c
+index 4737b2f46a4e4945334c59c55fd982b6c51b6d12..a3a441650e5d849b2560b6ac267d4eee06957bc6 100644
+--- a/library/x509.c
++++ b/library/x509.c
+@@ -209,7 +209,7 @@ static int esp_x509_get_hash_alg(const mbedtls_x509_buf *alg, mbedtls_md_type_t
+     p += md_oid.len;
+ 
+     /* Get md_alg from md_oid */
+-    if ((ret = mbedtls_oid_get_md_alg(&md_oid, md_alg)) != 0) {
++    if ((ret = esp_mbedtls_oid_get_md_alg(&md_oid, md_alg)) != 0) {
+         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_ALG, ret);
+     }
+ 
+@@ -283,7 +283,7 @@ int esp_mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
+             return ret;
+         }
+ 
+-        if ((ret = mbedtls_oid_get_md_alg(&alg_id, md_alg)) != 0) {
++        if ((ret = esp_mbedtls_oid_get_md_alg(&alg_id, md_alg)) != 0) {
+             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_ALG, ret);
+         }
+ 
+@@ -725,7 +725,7 @@ int esp_mbedtls_x509_get_sig_alg(const mbedtls_x509_buf *sig_oid, const mbedtls_
+         return MBEDTLS_ERR_X509_BAD_INPUT_DATA;
+     }
+ 
+-    if ((ret = mbedtls_oid_get_sig_alg(sig_oid, md_alg, pk_alg)) != 0) {
++    if ((ret = esp_mbedtls_oid_get_sig_alg(sig_oid, md_alg, pk_alg)) != 0) {
+         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_UNKNOWN_SIG_ALG, ret);
+     }
+ 
+@@ -844,10 +844,10 @@ int esp_mbedtls_x509_dn_gets(char *buf, size_t size, const mbedtls_x509_name *dn
+                           (name->val.tag != MBEDTLS_ASN1_PRINTABLE_STRING) &&
+                           (name->val.tag != MBEDTLS_ASN1_IA5_STRING);
+ 
+-        if ((ret = mbedtls_oid_get_attr_short_name(&name->oid, &short_name)) == 0) {
++        if ((ret = esp_mbedtls_oid_get_attr_short_name(&name->oid, &short_name)) == 0) {
+             ret = esp_mbedtls_snprintf(p, n, "%s=", short_name);
+         } else {
+-            if ((ret = mbedtls_oid_get_numeric_string(p, n, &name->oid)) > 0) {
++            if ((ret = esp_mbedtls_oid_get_numeric_string(p, n, &name->oid)) > 0) {
+                 n -= ret;
+                 p += ret;
+                 ret = esp_mbedtls_snprintf(p, n, "=");
+@@ -985,7 +985,7 @@ int esp_mbedtls_x509_sig_alg_gets(char *buf, size_t size, const mbedtls_x509_buf
+     size_t n = size;
+     const char *desc = NULL;
+ 
+-    ret = mbedtls_oid_get_sig_alg_desc(sig_oid, &desc);
++    ret = esp_mbedtls_oid_get_sig_alg_desc(sig_oid, &desc);
+     if (ret != 0) {
+         ret = esp_mbedtls_snprintf(p, n, "???");
+     } else {
+@@ -1555,7 +1555,7 @@ int esp_mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
+                         esp_mbedtls_snprintf(p, n, "\n%s            hardware type          : ", prefix);
+                     MBEDTLS_X509_SAFE_SNPRINTF;
+ 
+-                    ret = mbedtls_oid_get_numeric_string(p,
++                    ret = esp_mbedtls_oid_get_numeric_string(p,
+                                                          n,
+                                                          &other_name->value.hardware_module_name.oid);
+                     MBEDTLS_X509_SAFE_SNPRINTF;
+diff --git a/library/x509_crt.c b/library/x509_crt.c
+index a2f9a82c4efdd876c4f7a6f498ae24cc3640bb85..23b0e756e7001023464cd6cd637a950741446f66 100644
+--- a/library/x509_crt.c
++++ b/library/x509_crt.c
+@@ -927,7 +927,7 @@ static int esp_x509_get_crt_ext(unsigned char **p,
+         /*
+          * Detect supported extensions
+          */
+-        ret = mbedtls_oid_get_x509_ext_type(&extn_oid, &ext_type);
++        ret = esp_mbedtls_oid_get_x509_ext_type(&extn_oid, &ext_type);
+ 
+         if (ret != 0) {
+             /* Give the callback (if any) a chance to handle the extension */
+@@ -1694,7 +1694,7 @@ static int esp_x509_info_ext_key_usage(char **buf, size_t *size,
+     const char *sep = "";
+ 
+     while (cur != NULL) {
+-        if (mbedtls_oid_get_extended_key_usage(&cur->buf, &desc) != 0) {
++        if (esp_mbedtls_oid_get_extended_key_usage(&cur->buf, &desc) != 0) {
+             desc = "???";
+         }
+ 
+@@ -1723,7 +1723,7 @@ static int esp_x509_info_cert_policies(char **buf, size_t *size,
+     const char *sep = "";
+ 
+     while (cur != NULL) {
+-        if (mbedtls_oid_get_certificate_policies(&cur->buf, &desc) != 0) {
++        if (esp_mbedtls_oid_get_certificate_policies(&cur->buf, &desc) != 0) {
+             desc = "???";
+         }
+ 
+diff --git a/library/x509_csr.c b/library/x509_csr.c
+index 8db564b8c03044c5b2a7a4d7492fa651474f3fcc..fd246ab8ac198a7240595e2239f5e3e0740a2d07 100644
+--- a/library/x509_csr.c
++++ b/library/x509_csr.c
+@@ -115,7 +115,7 @@ static int esp_x509_csr_parse_extensions(mbedtls_x509_csr *csr,
+         /*
+          * Detect supported extensions and skip unsupported extensions
+          */
+-        ret = mbedtls_oid_get_x509_ext_type(&extn_oid, &ext_type);
++        ret = esp_mbedtls_oid_get_x509_ext_type(&extn_oid, &ext_type);
+ 
+         if (ret != 0) {
+             /* Give the callback (if any) a chance to handle the extension */
+diff --git a/library/x509write_crt.c b/library/x509write_crt.c
+index c0b7f11657dbdc560ad1b18703a1d05c00e8c6b3..57bd3fb4649ca565f811628442c67ebfd99da811 100644
+--- a/library/x509write_crt.c
++++ b/library/x509write_crt.c
+@@ -451,7 +451,7 @@ int esp_mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
+         return MBEDTLS_ERR_X509_INVALID_ALG;
+     }
+ 
+-    if ((ret = mbedtls_oid_get_oid_by_sig_alg(pk_alg, ctx->md_alg,
++    if ((ret = esp_mbedtls_oid_get_oid_by_sig_alg(pk_alg, ctx->md_alg,
+                                               &sig_oid, &sig_oid_len)) != 0) {
+         return ret;
+     }
+diff --git a/library/x509write_csr.c b/library/x509write_csr.c
+index e63b1fc783a597e1a973fcad4091732762348bec..ac65c828da0df22b78929154ed36e19f5607a118 100644
+--- a/library/x509write_csr.c
++++ b/library/x509write_csr.c
+@@ -239,7 +239,7 @@ static int esp_x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
+         return MBEDTLS_ERR_X509_INVALID_ALG;
+     }
+ 
+-    if ((ret = mbedtls_oid_get_oid_by_sig_alg(pk_alg, ctx->md_alg,
++    if ((ret = esp_mbedtls_oid_get_oid_by_sig_alg(pk_alg, ctx->md_alg,
+                                               &sig_oid, &sig_oid_len)) != 0) {
+         return ret;
+     }
+diff --git a/tests/suites/test_suite_md.function b/tests/suites/test_suite_md.function
+index 2a885e23717b9a88c59145ac8f6f94cd3bf92011..9fc9f76cb1e8ba7b0f01963cb2545c825c9b31f5 100644
+--- a/tests/suites/test_suite_md.function
++++ b/tests/suites/test_suite_md.function
+@@ -47,11 +47,11 @@ void mbedtls_md_list()
+ #if defined(MBEDTLS_OID_C)
+         mbedtls_asn1_buf asn1;
+         /* Check that we have an OID definition */
+-        TEST_EQUAL(mbedtls_oid_get_oid_by_md((mbedtls_md_type_t) *md_type_ptr,
++        TEST_EQUAL(esp_mbedtls_oid_get_oid_by_md((mbedtls_md_type_t) *md_type_ptr,
+                                              (const char **) &asn1.p, &asn1.len), 0);
+         /* Check that this OID definition maps back to the correct mbedtls_md_type_t */
+         mbedtls_md_type_t m;
+-        TEST_EQUAL(mbedtls_oid_get_md_alg(&asn1, &m), 0);
++        TEST_EQUAL(esp_mbedtls_oid_get_md_alg(&asn1, &m), 0);
+         TEST_EQUAL(m, *md_type_ptr);
+ #endif
+     }
+diff --git a/tests/suites/test_suite_oid.data b/tests/suites/test_suite_oid.data
+index f8f1d43aa1320797d0b35495cff555cb8a428e8d..2d0a443a41cb9ffce07fcc44d660d1dc1b04eacf 100644
+--- a/tests/suites/test_suite_oid.data
++++ b/tests/suites/test_suite_oid.data
+@@ -202,42 +202,42 @@ oid_from_numeric_string:"2.4294967215":0:"8FFFFFFF7F"
+ OID from numeric string - OID with overflowing subidentifier
+ oid_from_numeric_string:"2.4294967216":MBEDTLS_ERR_ASN1_INVALID_DATA:""
+ 
+-mbedtls_oid_get_md_hmac - RIPEMD160
++esp_mbedtls_oid_get_md_hmac - RIPEMD160
+ depends_on:MBEDTLS_MD_CAN_RIPEMD160
+-mbedtls_oid_get_md_hmac:"2B06010505080104":MBEDTLS_MD_RIPEMD160
++esp_mbedtls_oid_get_md_hmac:"2B06010505080104":MBEDTLS_MD_RIPEMD160
+ 
+-mbedtls_oid_get_md_hmac - SHA1
++esp_mbedtls_oid_get_md_hmac - SHA1
+ depends_on:MBEDTLS_MD_CAN_SHA1
+-mbedtls_oid_get_md_hmac:"2A864886F70D0207":MBEDTLS_MD_SHA1
++esp_mbedtls_oid_get_md_hmac:"2A864886F70D0207":MBEDTLS_MD_SHA1
+ 
+-mbedtls_oid_get_md_hmac - SHA224
++esp_mbedtls_oid_get_md_hmac - SHA224
+ depends_on:MBEDTLS_MD_CAN_SHA224
+-mbedtls_oid_get_md_hmac:"2A864886F70D0208":MBEDTLS_MD_SHA224
++esp_mbedtls_oid_get_md_hmac:"2A864886F70D0208":MBEDTLS_MD_SHA224
+ 
+-mbedtls_oid_get_md_hmac - SHA256
++esp_mbedtls_oid_get_md_hmac - SHA256
+ depends_on:MBEDTLS_MD_CAN_SHA256
+-mbedtls_oid_get_md_hmac:"2A864886F70D0209":MBEDTLS_MD_SHA256
++esp_mbedtls_oid_get_md_hmac:"2A864886F70D0209":MBEDTLS_MD_SHA256
+ 
+-mbedtls_oid_get_md_hmac - SHA384
++esp_mbedtls_oid_get_md_hmac - SHA384
+ depends_on:MBEDTLS_MD_CAN_SHA384
+-mbedtls_oid_get_md_hmac:"2A864886F70D020A":MBEDTLS_MD_SHA384
++esp_mbedtls_oid_get_md_hmac:"2A864886F70D020A":MBEDTLS_MD_SHA384
+ 
+-mbedtls_oid_get_md_hmac - SHA512
++esp_mbedtls_oid_get_md_hmac - SHA512
+ depends_on:MBEDTLS_MD_CAN_SHA512
+-mbedtls_oid_get_md_hmac:"2A864886F70D020B":MBEDTLS_MD_SHA512
++esp_mbedtls_oid_get_md_hmac:"2A864886F70D020B":MBEDTLS_MD_SHA512
+ 
+-mbedtls_oid_get_md_hmac - SHA3_224
++esp_mbedtls_oid_get_md_hmac - SHA3_224
+ depends_on:MBEDTLS_MD_CAN_SHA3_224
+-mbedtls_oid_get_md_hmac:"60864801650304020D":MBEDTLS_MD_SHA3_224
++esp_mbedtls_oid_get_md_hmac:"60864801650304020D":MBEDTLS_MD_SHA3_224
+ 
+-mbedtls_oid_get_md_hmac - SHA3_256
++esp_mbedtls_oid_get_md_hmac - SHA3_256
+ depends_on:MBEDTLS_MD_CAN_SHA3_256
+-mbedtls_oid_get_md_hmac:"60864801650304020E":MBEDTLS_MD_SHA3_256
++esp_mbedtls_oid_get_md_hmac:"60864801650304020E":MBEDTLS_MD_SHA3_256
+ 
+-mbedtls_oid_get_md_hmac - SHA3_384
++esp_mbedtls_oid_get_md_hmac - SHA3_384
+ depends_on:MBEDTLS_MD_CAN_SHA3_384
+-mbedtls_oid_get_md_hmac:"60864801650304020F":MBEDTLS_MD_SHA3_384
++esp_mbedtls_oid_get_md_hmac:"60864801650304020F":MBEDTLS_MD_SHA3_384
+ 
+-mbedtls_oid_get_md_hmac - SHA3_512
++esp_mbedtls_oid_get_md_hmac - SHA3_512
+ depends_on:MBEDTLS_MD_CAN_SHA3_512
+-mbedtls_oid_get_md_hmac:"608648016503040210":MBEDTLS_MD_SHA3_512
++esp_mbedtls_oid_get_md_hmac:"608648016503040210":MBEDTLS_MD_SHA3_512
+diff --git a/tests/suites/test_suite_oid.function b/tests/suites/test_suite_oid.function
+index 337f84310956fda30429d11a65380dbb3bacfa3e..a83be72bac3ea72cf457c2c7ec59f9a11c548b78 100644
+--- a/tests/suites/test_suite_oid.function
++++ b/tests/suites/test_suite_oid.function
+@@ -21,7 +21,7 @@ void oid_get_certificate_policies(data_t *oid, char *result_str)
+     asn1_buf.p = oid->x;
+     asn1_buf.len = oid->len;
+ 
+-    ret = mbedtls_oid_get_certificate_policies(&asn1_buf, &desc);
++    ret = esp_mbedtls_oid_get_certificate_policies(&asn1_buf, &desc);
+     if (strlen(result_str) == 0) {
+         TEST_ASSERT(ret == MBEDTLS_ERR_OID_NOT_FOUND);
+     } else {
+@@ -42,7 +42,7 @@ void oid_get_extended_key_usage(data_t *oid, char *result_str)
+     asn1_buf.p = oid->x;
+     asn1_buf.len = oid->len;
+ 
+-    ret = mbedtls_oid_get_extended_key_usage(&asn1_buf, &desc);
++    ret = esp_mbedtls_oid_get_extended_key_usage(&asn1_buf, &desc);
+     if (strlen(result_str) == 0) {
+         TEST_ASSERT(ret == MBEDTLS_ERR_OID_NOT_FOUND);
+     } else {
+@@ -63,7 +63,7 @@ void oid_get_x509_extension(data_t *oid, int exp_type)
+     ext_oid.p = oid->x;
+     ext_oid.len = oid->len;
+ 
+-    ret = mbedtls_oid_get_x509_ext_type(&ext_oid, &ext_type);
++    ret = esp_mbedtls_oid_get_x509_ext_type(&ext_oid, &ext_type);
+     if (exp_type == 0) {
+         TEST_ASSERT(ret == MBEDTLS_ERR_OID_NOT_FOUND);
+     } else {
+@@ -84,7 +84,7 @@ void oid_get_md_alg_id(data_t *oid, int exp_md_id)
+     md_oid.p = oid->x;
+     md_oid.len = oid->len;
+ 
+-    ret = mbedtls_oid_get_md_alg(&md_oid, &md_id);
++    ret = esp_mbedtls_oid_get_md_alg(&md_oid, &md_id);
+ 
+     if (exp_md_id < 0) {
+         TEST_ASSERT(ret == MBEDTLS_ERR_OID_NOT_FOUND);
+@@ -97,7 +97,7 @@ void oid_get_md_alg_id(data_t *oid, int exp_md_id)
+ /* END_CASE */
+ 
+ /* BEGIN_CASE */
+-void mbedtls_oid_get_md_hmac(data_t *oid, int exp_md_id)
++void esp_mbedtls_oid_get_md_hmac(data_t *oid, int exp_md_id)
+ {
+     mbedtls_asn1_buf md_oid = { 0, 0, NULL };
+     int ret;
+@@ -107,7 +107,7 @@ void mbedtls_oid_get_md_hmac(data_t *oid, int exp_md_id)
+     md_oid.p = oid->x;
+     md_oid.len = oid->len;
+ 
+-    ret = mbedtls_oid_get_md_hmac(&md_oid, &md_id);
++    ret = esp_mbedtls_oid_get_md_hmac(&md_oid, &md_id);
+ 
+     if (exp_md_id < 0) {
+         TEST_ASSERT(ret == MBEDTLS_ERR_OID_NOT_FOUND);
+@@ -131,7 +131,7 @@ void oid_get_numeric_string(data_t *oid, int error_ret, char *result_str)
+     input_oid.p = oid->len ? oid->x : (void *) 1;
+     input_oid.len = oid->len;
+ 
+-    ret = mbedtls_oid_get_numeric_string(buf, sizeof(buf), &input_oid);
++    ret = esp_mbedtls_oid_get_numeric_string(buf, sizeof(buf), &input_oid);
+ 
+     if (error_ret == 0) {
+         TEST_EQUAL(ret, strlen(result_str));
+diff --git a/tests/suites/test_suite_x509parse.function b/tests/suites/test_suite_x509parse.function
+index f3ae0f4d0a84f52cec7092dcfa6d115c821b5dc3..a60c4b1da6b8be4dbd46025339120df6cf4395eb 100644
+--- a/tests/suites/test_suite_x509parse.function
++++ b/tests/suites/test_suite_x509parse.function
+@@ -249,7 +249,7 @@ int verify_parse_san(mbedtls_x509_subject_alternative_name *san,
+                 ret = mbedtls_snprintf(p, n, " hardware type : ");
+                 MBEDTLS_X509_SAFE_SNPRINTF;
+ 
+-                ret = mbedtls_oid_get_numeric_string(p,
++                ret = esp_mbedtls_oid_get_numeric_string(p,
+                                                      n,
+                                                      &san->san.other_name.value.hardware_module_name
+                                                      .oid);
+@@ -994,7 +994,7 @@ void mbedtls_x509_dn_get_next(char *name_str,
+     parsed_cur = &parsed;
+     len = 0;
+     for (i = 0; parsed_cur != NULL; i++) {
+-        TEST_EQUAL(mbedtls_oid_get_attr_short_name(&parsed_cur->oid,
++        TEST_EQUAL(esp_mbedtls_oid_get_attr_short_name(&parsed_cur->oid,
+                                                    &short_name), 0);
+         len += mbedtls_snprintf((char *) out + len, out_size - len, "%s ", short_name);
+         parsed_cur = mbedtls_x509_dn_get_next(parsed_cur);
+@@ -1500,7 +1500,7 @@ void x509_oid_desc(data_t *buf, char *ref_desc)
+     oid.p   = buf->x;
+     oid.len   = buf->len;
+ 
+-    ret = mbedtls_oid_get_extended_key_usage(&oid, &desc);
++    ret = esp_mbedtls_oid_get_extended_key_usage(&oid, &desc);
+ 
+     if (strcmp(ref_desc, "notfound") == 0) {
+         TEST_ASSERT(ret != 0);
+@@ -1532,7 +1532,7 @@ void x509_oid_numstr(data_t *oid_buf, char *numstr, int blen, int ret)
+ 
+     TEST_ASSERT((size_t) blen <= sizeof(num_buf));
+ 
+-    TEST_EQUAL(mbedtls_oid_get_numeric_string(num_buf, blen, &oid), ret);
++    TEST_EQUAL(esp_mbedtls_oid_get_numeric_string(num_buf, blen, &oid), ret);
+ 
+     if (ret >= 0) {
+         TEST_EQUAL(num_buf[ret], 0);

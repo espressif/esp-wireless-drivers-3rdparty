@@ -1,0 +1,22 @@
+diff --git a/library/ecdsa.c b/library/ecdsa.c
+index c89c9530dafac6daa8cd9591cc5a7729a1605dc8..671ae37b713330b230dfc6ab993c1356951fb221 100644
+--- a/library/ecdsa.c
++++ b/library/ecdsa.c
+@@ -163,7 +163,7 @@ static void esp_ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
+             if (rs_ctx->SUB == NULL)                                    \
+             return MBEDTLS_ERR_ECP_ALLOC_FAILED;                  \
+                                                                    \
+-            ecdsa_restart_## SUB ##_init(rs_ctx->SUB);                 \
++            esp_ecdsa_restart_## SUB ##_init(rs_ctx->SUB);                 \
+         }                                                                \
+ } while (0)
+ 
+@@ -173,7 +173,7 @@ static void esp_ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
+         if (rs_ctx != NULL && rs_ctx->SUB != NULL &&                     \
+             ret != MBEDTLS_ERR_ECP_IN_PROGRESS)                         \
+         {                                                                \
+-            ecdsa_restart_## SUB ##_free(rs_ctx->SUB);                 \
++            esp_ecdsa_restart_## SUB ##_free(rs_ctx->SUB);                 \
+             esp_mbedtls_free(rs_ctx->SUB);                                 \
+             rs_ctx->SUB = NULL;                                          \
+         }                                                                \
